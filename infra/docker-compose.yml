@@ -1,0 +1,16 @@
+# Local development infrastructure: PostgreSQL 16 + Redis 7.
+# Usage (from repo root): docker compose -f infra/docker-compose.yml up -d
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: zonm
+      POSTGRES_PASSWORD: zonm_dev_password
+      POSTGRES_DB: zonm
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+  redis:
+    image: redis:7
+    ports: ["6379:6379"]
+volumes:
+  pgdata:
