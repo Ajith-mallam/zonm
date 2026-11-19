@@ -31,23 +31,33 @@ function createUser(tag, role) {
 // Uses Playwright's installed headless shell (PLAYWRIGHT_BROWSERS_PATH), or E2E_CHROMIUM_PATH.
 const launch = () => chromium.launch(process.env.E2E_CHROMIUM_PATH ? { executablePath: process.env.E2E_CHROMIUM_PATH } : {});
 
-/** First sign-in: enrol MFA, replace the temporary password. Returns a signed-in page. */
+/** The server's switches, as set in apps/web/.env (loaded by run.cjs). */
+const MFA_REQUIRED = process.env.AUTH_MFA_REQUIRED !== "false";
+
+/**
+ * First sign-in. Completes whichever gates the server enforces: MFA enrolment
+ * (when AUTH_MFA_REQUIRED is on) and the forced password change (when
+ * AUTH_FORCE_PASSWORD_CHANGE is on). Returns a signed-in page.
+ */
 async function onboard(browser, u) {
   const page = await (await browser.newContext()).newPage();
   await page.goto(BASE + "/login");
   await page.fill("#email", u.email);
   await page.fill("#password", u.temp);
-  await Promise.all([page.waitForURL(/mfa\/setup/), page.click("button[type=submit]")]);
-  await page.click("summary");
-  u.secret = (await page.locator("details code").innerText()).replace(/\s/g, "");
-  await page.fill("#code", totp(u.secret));
-  await page.click("button[type=submit]");
-  await page.click("text=I have saved my codes");
-  await page.waitForURL(/account\/password/);
-  await page.fill("#current", u.temp);
-  await page.fill("#next", PW);
-  await page.fill("#confirm", PW);
-  await Promise.all([page.waitForURL((url) => !url.pathname.startsWith("/account")), page.click("button[type=submit]")]);
+  await Promise.all([page.waitForURL((url) => !url.pathname.startsWith("/login")), page.click("button[type=submit]")]);
+  if (new URL(page.url()).pathname === "/mfa/setup") {
+    await page.click("summary");
+    u.secret = (await page.locator("details code").innerText()).replace(/\s/g, "");
+    await page.fill("#code", totp(u.secret));
+    await page.click("button[type=submit]");
+    await Promise.all([page.waitForURL((url) => url.pathname !== "/mfa/setup"), page.click("text=I have saved my codes")]);
+  }
+  if (new URL(page.url()).pathname === "/account/password") {
+    await page.fill("#current", u.temp);
+    await page.fill("#next", PW);
+    await page.fill("#confirm", PW);
+    await Promise.all([page.waitForURL((url) => !url.pathname.startsWith("/account")), page.click("button[type=submit]")]);
+  }
   return page;
 }
 
@@ -64,4 +74,4 @@ async function submit(page, form, name) {
 }
 const alertText = async (scope) => ((await scope.getByRole("alert").count()) ? (await scope.getByRole("alert").first().innerText()).trim() : "");
 
-module.exports = { shots, BASE, PW, RUN, ok, done, totp, createUser, launch, onboard, settle, submit, alertText };
+module.exports = { MFA_REQUIRED, shots, BASE, PW, RUN, ok, done, totp, createUser, launch, onboard, settle, submit, alertText };

@@ -54,6 +54,8 @@ To detect tampering by a database superuser, periodically export the chain head 
 
 The policy values are defaults and still need the client's security policy (open item).
 
+**Test-mode switches.** `AUTH_MFA_REQUIRED=false` makes sign-in password-only (every session counts as MFA-verified, the MFA pages redirect into the app, and a warning banner is shown). `AUTH_FORCE_PASSWORD_CHANGE=false` skips the temporary/expired password change. Both default to on and are for local testing only. A deployment checklist must confirm that neither is set to `false`. Login audit events record `mfaRequired`, so periods in test mode are visible in the audit log.
+
 ## Roles (M1)
 
 The permission matrix is in `apps/web/src/lib/rbac.ts`. Every case page and action loads the case through `getCaseAccess`, which answers 404 when the user has no access, so case existence isn't disclosed. Case status also limits actions: closed cases accept only notes and the lead's reopen/archive decision, and archived cases are read-only. Closing, archiving and reopening need the lead or a supervisor. Audit entries for cases record identifiers and field names, never titles, notes or reasons.

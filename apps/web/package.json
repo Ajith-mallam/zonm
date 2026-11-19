@@ -13,7 +13,8 @@
     "db:migrate:dev": "prisma migrate dev",
     "user:create": "tsx --env-file=.env scripts/create-admin.ts",
     "db:seed-demo": "tsx --env-file=.env scripts/seed-demo.ts",
-    "test:e2e": "node --env-file-if-exists=.env e2e/run.cjs"
+    "test:e2e": "node --env-file-if-exists=.env e2e/run.cjs",
+    "dev:set-all-passwords": "tsx --env-file=.env scripts/set-all-passwords.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.2",

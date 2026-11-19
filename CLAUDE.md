@@ -14,6 +14,7 @@ A stylometric authorship attribution platform for a Seychelles client, covering 
 ## Local environment (Windows)
 - Python 3.11 is available as `py -3.11`. The engine venv is `services/engine/.venv`.
 - Postgres, Redis and Docker are installed by `infra/setup-windows.ps1`, which must be run as Administrator. Until then, `cd infra/devdb && npm install && npm start` runs PostgreSQL 16 as a normal user (embedded binaries, data in `infra/devdb/data`). Dev DB: `postgresql://zonm:zonm_dev_password@localhost:5432/zonm`. Redis is not available yet.
+- **Test mode is ON locally (user request, 2026-11-19):** `apps/web/.env` sets `AUTH_MFA_REQUIRED=false` and `AUTH_FORCE_PASSWORD_CHANGE=false`, giving password-only sign-in with a yellow warning banner. Every local user's password is `Zonm@1234` (`npm run dev:set-all-passwords [-- --password X]`, local DB only). Both switches default to on; remove the two lines to restore MFA. The M1 E2E suite reports SKIP while MFA is off.
 - `apps/web/.env` (git-ignored) holds dev secrets. Create users with `npm run user:create -- --email <e> --name "<n>" [--role ADMIN]`; it prints a one-time temporary password.
 - Port 3000 is taken by another app on this machine; run the web app on 3100 (`npx next start -p 3100` or `npx next dev -p 3100`).
 - Run vitest from an upper-case drive path (`H:\zonm-net\apps\web`). From `h:\...`, Windows loads vitest twice and every suite fails with "failed to find the current suite".

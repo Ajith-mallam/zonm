@@ -2,6 +2,7 @@ import QRCode from "qrcode";
 import { redirect } from "next/navigation";
 import { SignOutButton } from "@/components/sign-out";
 import { GateShell } from "@/components/ui";
+import { MFA_REQUIRED } from "@/lib/auth/policy";
 import { requireSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { decryptSecret, encryptSecret } from "@/lib/security/crypto";
@@ -12,6 +13,7 @@ export const metadata = { title: "Set up two-step verification" };
 
 export default async function MfaSetupPage() {
   const s = await requireSession("mfa");
+  if (!MFA_REQUIRED) redirect("/");
   if (s.user.mfaEnabledAt) redirect(s.mfaVerified ? "/" : "/mfa");
 
   // Reuse a pending (unconfirmed) secret so reloading the page keeps the same QR code.

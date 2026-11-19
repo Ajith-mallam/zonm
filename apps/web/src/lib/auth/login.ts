@@ -2,7 +2,7 @@
 import { recordAudit } from "../audit";
 import { prisma } from "../db";
 import { dummyPasswordHash, isLocked, LOCKOUT_POLICY, verifyPassword } from "../security/password";
-import { SESSION_POLICY } from "./policy";
+import { MFA_REQUIRED, SESSION_POLICY } from "./policy";
 import type { RequestContext } from "./request-context";
 
 export type AuthenticatedUser = { id: string; email: string; name: string; sessionId: string };
@@ -92,7 +92,7 @@ export async function authenticate(
       entityType: "UserSession",
       entityId: s.id,
       ...ctx,
-      details: { mfaRequired: true, mfaEnrolled: !!user.mfaEnabledAt },
+      details: { mfaRequired: MFA_REQUIRED, mfaEnrolled: !!user.mfaEnabledAt },
     });
     return s;
   });

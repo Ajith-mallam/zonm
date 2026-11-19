@@ -16,8 +16,8 @@ for (const s of suites) {
   console.log(`\n=== ${s}`);
   const t = Date.now();
   const r = spawnSync(process.execPath, [path.join(__dirname, s)], { stdio: "inherit", env: process.env });
-  results.push([s, r.status === 0, ((Date.now() - t) / 1000).toFixed(0)]);
+  results.push([s, r.status === 0 ? "PASS" : r.status === 3 ? "SKIP" : "FAIL", ((Date.now() - t) / 1000).toFixed(0)]);
 }
 console.log("\n=== Summary");
-for (const [s, pass, secs] of results) console.log(`${pass ? "PASS" : "FAIL"}  ${s}  (${secs}s)`);
-process.exit(results.every(([, pass]) => pass) ? 0 : 1);
+for (const [s, result, secs] of results) console.log(`${result}  ${s}  (${secs}s)`);
+process.exit(results.some(([, result]) => result === "FAIL") ? 1 : 0);

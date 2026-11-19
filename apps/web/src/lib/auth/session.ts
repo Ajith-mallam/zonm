@@ -9,7 +9,7 @@ import { recordAudit } from "../audit";
 import { prisma } from "../db";
 import type { Actor } from "../rbac";
 import { isPasswordExpired } from "../security/password";
-import { SESSION_POLICY } from "./policy";
+import { FORCE_PASSWORD_CHANGE, MFA_REQUIRED, SESSION_POLICY } from "./policy";
 
 export type SessionUser = Pick<
   User,
@@ -58,8 +58,9 @@ export const getCurrentSession = cache(async (): Promise<CurrentSession | null> 
     session,
     user,
     actor: { id: user.id, role: user.role, status: user.status },
-    mfaVerified: !!row.mfaVerifiedAt,
-    passwordChangeRequired: user.mustChangePassword || isPasswordExpired(user.passwordChangedAt),
+    // With MFA switched off (local testing only) every session counts as verified.
+    mfaVerified: !!row.mfaVerifiedAt || !MFA_REQUIRED,
+    passwordChangeRequired: FORCE_PASSWORD_CHANGE && (user.mustChangePassword || isPasswordExpired(user.passwordChangedAt)),
   };
 });
 

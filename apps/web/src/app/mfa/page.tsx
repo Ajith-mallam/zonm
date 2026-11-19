@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { GateShell } from "@/components/ui";
+import { MFA_REQUIRED } from "@/lib/auth/policy";
 import { requireSession } from "@/lib/auth/session";
 import { MfaChallengeForm } from "./challenge-form";
 import { SignOutButton } from "@/components/sign-out";
@@ -8,6 +9,7 @@ export const metadata = { title: "Verify" };
 
 export default async function MfaPage() {
   const s = await requireSession("mfa");
+  if (!MFA_REQUIRED) redirect("/");
   if (!s.user.mfaEnabledAt) redirect("/mfa/setup");
   if (s.mfaVerified) redirect("/");
   return (

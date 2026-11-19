@@ -1,7 +1,13 @@
 // M1 authentication: login gates, MFA enrolment/challenge, password policy,
 // user administration, lockout, audit verification.
 const path = require("path");
-const { BASE, RUN, ok, done, createUser, launch, totp, shots } = require("./lib.cjs");
+const { BASE, RUN, ok, done, createUser, launch, totp, shots, MFA_REQUIRED } = require("./lib.cjs");
+
+if (!MFA_REQUIRED) {
+  // This suite tests MFA and the forced password change themselves.
+  console.log("SKIPPED: AUTH_MFA_REQUIRED=false. Run the app with MFA on to test sign-in security.");
+  process.exit(3); // 3 = skipped (see run.cjs)
+}
 
 const admin = createUser("admin", "ADMIN");
 const ADMIN_EMAIL = admin.email;
