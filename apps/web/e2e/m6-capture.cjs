@@ -35,15 +35,19 @@ const POST =
   ok(/single post/.test(await check("https://www.facebook.com/bbcnews")), "page URL (not a post) refused");
   ok(/facebook\.com/.test(await check("https://x.com/someone/status/1")), "non-Facebook URL refused");
 
-  // 2. A valid URL goes to the worker; without an Apify token it fails clearly
-  await p.goto(caseUrl + "/evidence");
-  const form = p.locator("form", { has: p.locator("#post-url") });
-  await form.locator("#post-url").fill("https://www.facebook.com/somepage/posts/1234567890123?__tn__=R");
-  await Promise.all([p.waitForURL(/evidence\/capture\/c[a-z0-9]+$/), form.getByRole("button", { name: "Check post" }).click()]);
-  ok((await p.locator("main").innerText()).includes("https://www.facebook.com/somepage/posts/1234567890123"), "job page shows the canonical URL (tracking parameters removed)");
-  await p.getByText(/APIFY_TOKEN|Captured/).first().waitFor({ timeout: 30000 });
-  const noToken = await p.locator("main").innerText();
-  ok(process.env.APIFY_TOKEN ? true : /not set up yet: add APIFY_TOKEN/.test(noToken), "without an Apify token the check fails with setup instructions");
+  // 2. A valid URL goes to the worker; without an Apify token it fails clearly.
+  // Skipped when a token is configured: the suite never makes paid live calls.
+  if (!process.env.APIFY_TOKEN) {
+    await p.goto(caseUrl + "/evidence");
+    const form = p.locator("form", { has: p.locator("#post-url") });
+    await form.locator("#post-url").fill("https://www.facebook.com/somepage/posts/1234567890123?__tn__=R");
+    await Promise.all([p.waitForURL(/evidence\/capture\/c[a-z0-9]+$/), form.getByRole("button", { name: "Check post" }).click()]);
+    ok((await p.locator("main").innerText()).includes("https://www.facebook.com/somepage/posts/1234567890123"), "job page shows the canonical URL (tracking parameters removed)");
+    await p.getByText(/APIFY_TOKEN|Captured/).first().waitFor({ timeout: 30000 });
+    ok(/not set up yet: add APIFY_TOKEN/.test(await p.locator("main").innerText()), "without an Apify token the check fails with setup instructions");
+  } else {
+    console.log("(skipped the no-token check: APIFY_TOKEN is set)");
+  }
 
   // 3. Full pipeline with a fake provider
   // Run tsx through node directly (no shell), so the post text arrives as one argument.

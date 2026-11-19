@@ -93,6 +93,10 @@ export function normaliseFacebookItem(item: Record<string, unknown>): CapturedPo
 export function pickRequestedPost(items: Record<string, unknown>[], ref: PostRef): Record<string, unknown> | null {
   const hit = items.find((it) => [it.postId, it.url, it.topLevelUrl, it.inputUrl].some((v) => typeof v === "string" && v.includes(ref.key)) || String(it.postId) === ref.key);
   if (hit) return hit;
-  // Share links redirect to the real post URL, so the share code never appears in results.
+  // We ask for exactly one post URL, so a single result is that post even when
+  // its identifiers differ: Facebook issues a fresh pfbid on each page load
+  // (verified live: the requested and returned pfbid differed for the same
+  // post), and share links redirect to the real post URL.
+  if (items.length === 1) return items[0];
   return ref.url.includes("/share/") && items.length >= 1 ? items[0] : null;
 }

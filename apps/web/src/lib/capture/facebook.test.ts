@@ -54,7 +54,10 @@ describe("apify items", () => {
     const other = { postId: "999", url: "https://www.facebook.com/bbcnews/posts/other" };
     const ref = parseFacebookPostUrl(item.url);
     expect(pickRequestedPost([other, item], ref)).toBe(item);
-    expect(pickRequestedPost([other], ref)).toBeNull();
+    // Several unrelated results: none is taken.
+    expect(pickRequestedPost([other, { postId: "998", url: "https://www.facebook.com/bbcnews/posts/x" }], ref)).toBeNull();
+    // One result for a one-post request is that post, even with a different pfbid (seen live).
+    expect(pickRequestedPost([other], ref)).toBe(other);
     expect(pickRequestedPost([other], parseFacebookPostUrl("https://www.facebook.com/share/p/1AbCdEfGh2/"))).toBe(other);
   });
 });
