@@ -33,14 +33,14 @@ Principles:
 
 ## Phase 1 — Core evidence workflow
 
-1. Foundation: monorepo, Prisma schema, Postgres/Redis, engine skeleton ✅ (scaffold)
-2. M1: Auth.js credentials login, password policy, lockout, TOTP MFA, roles + permission matrix, case access lists
-3. M12: append-only, hash-chained audit log (DB-level protection) and the integrity verification endpoint
+1. Foundation: monorepo, Prisma schema, Postgres/Redis, engine skeleton ✅ (scaffold, schema + migrations)
+2. M1: Auth.js credentials login, password policy, lockout, TOTP MFA, roles + permission matrix, case access lists (🟡 policy, hashing, lockout, TOTP, encryption and RBAC libraries done; Auth.js wiring and pages pending)
+3. M12: append-only, hash-chained audit log (DB-level protection) and the integrity verification endpoint (🟡 DB triggers, verifier function and writer done; endpoint pending)
 4. M2: cases (reference numbers, status workflow, team, notes, tasks)
 5. M3: candidates (pseudonym, restricted real identity, legal basis, handles), corpus sufficiency indicator
 6. M4: upload (TXT/DOCX/PDF/CSV/JSON/WhatsApp), auto-split, SHA-256 hashing, metadata, extraction preview, de-dup, exclusions and versions
-7. M5 (engine): normalisation, tokenisation, function-word lexicons, word-level language ID, CMI, chunking
-8. M6 (engine): features, Burrows/Eder/Cosine Delta, char n-gram cosine, style-marker distance, ensemble, confidence grade
+7. M5 (engine): normalisation, tokenisation, function-word lexicons, word-level language ID, CMI, chunking ✅ (seed lexicons, pending client corpus)
+8. M6 (engine): features, Burrows/Eder/Cosine Delta, char n-gram cosine, style-marker distance, ensemble, confidence grade ✅ (grade thresholds uncalibrated until M9)
 9. Analysis jobs via BullMQ, with progress, cancellation and run records
 10. M10: verdict panel, score charts, language composition
 11. Social capture: author name/ID on the new-case form, Apify monitor jobs, auto-ingest and auto-scan (reuses the poc-apify approach)

@@ -1,0 +1,478 @@
+// ZONM NET data model (Phase 1).
+// Module references (M1-M12, F-numbers) follow the client specification.
+//
+// Database-level protections that Prisma cannot express (the append-only,
+// hash-chained audit log and immutable document originals) live in
+// prisma/migrations/*_integrity/migration.sql.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ─────────────────────────────────────────────────────────────── M1 users
+
+enum Role {
+  ADMIN // user and system administration; no implicit case access
+  SUPERVISOR // creates cases, assigns teams, sees all cases
+  ANALYST // works the cases they are a member of
+  REVIEWER // reviews and signs off results on assigned cases
+  AUDITOR // read-only access to the audit log and integrity checks
+}
+
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+
+model User {
+  id                 String     @id @default(cuid())
+  email              String     @unique
+  name               String
+  role               Role
+  status             UserStatus @default(ACTIVE)
+  passwordHash       String
+  passwordChangedAt  DateTime   @default(now())
+  mustChangePassword Boolean    @default(true)
+  failedLoginCount   Int        @default(0)
+  lockedUntil        DateTime?
+  lastLoginAt        DateTime?
+  // TOTP secret, AES-256-GCM encrypted with MFA_ENCRYPTION_KEY. Null until enrolled.
+  mfaSecretEnc       String?
+  mfaEnabledAt       DateTime?
+  mfaLastUsedStep    BigInt? // last accepted TOTP time step, blocks code replay
+  createdAt          DateTime   @default(now())
+  updatedAt          DateTime   @updatedAt
+
+  passwordHistory PasswordHistory[]
+  recoveryCodes   MfaRecoveryCode[]
+  sessions        UserSession[]
+  memberships     CaseMember[]      @relation("member")
+  casesCreated    Case[]            @relation("caseCreatedBy")
+  casesLed        Case[]            @relation("caseLead")
+}
+
+// Previous password hashes, to block reuse.
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model MfaRecoveryCode {
+  id       String    @id @default(cuid())
+  userId   String
+  codeHash String
+  usedAt   DateTime?
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Server-side session record. The Auth.js JWT carries the session id, and every
+// request checks it, so sessions can be revoked (logout everywhere, disabled user).
+model UserSession {
+  id            String    @id @default(cuid())
+  userId        String
+  createdAt     DateTime  @default(now())
+  lastSeenAt    DateTime  @default(now())
+  expiresAt     DateTime
+  mfaVerifiedAt DateTime?
+  revokedAt     DateTime?
+  ip            String?
+  userAgent     String?
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ─────────────────────────────────────────────────────────────── M2 cases
+
+enum CaseStatus {
+  OPEN
+  IN_ANALYSIS
+  UNDER_REVIEW
+  CLOSED
+  ARCHIVED
+}
+
+enum CasePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum CaseMemberRole {
+  LEAD
+  ANALYST
+  REVIEWER
+  OBSERVER
+}
+
+model Case {
+  id          String       @id @default(cuid())
+  reference   String       @unique // e.g. ZN-2026-0042, allocated from CaseCounter
+  title       String
+  description String?
+  status      CaseStatus   @default(OPEN)
+  priority    CasePriority @default(NORMAL)
+  createdById String
+  leadId      String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  closedAt    DateTime?
+
+  createdBy     User               @relation("caseCreatedBy", fields: [createdById], references: [id])
+  lead          User?              @relation("caseLead", fields: [leadId], references: [id])
+  members       CaseMember[]
+  notes         CaseNote[]
+  tasks         CaseTask[]
+  statusHistory CaseStatusChange[]
+  candidates    Candidate[]
+  sourceFiles   SourceFile[]
+  documents     Document[]
+  runs          AnalysisRun[]
+  monitors      SocialMonitor[]
+
+  @@index([status])
+}
+
+// One row per year; incremented with UPDATE ... RETURNING to allocate references.
+model CaseCounter {
+  year Int @id
+  last Int @default(0)
+}
+
+model CaseMember {
+  id        String         @id @default(cuid())
+  caseId    String
+  userId    String
+  role      CaseMemberRole
+  addedById String
+  addedAt   DateTime       @default(now())
+  case      Case           @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  user      User           @relation("member", fields: [userId], references: [id])
+
+  @@unique([caseId, userId])
+  @@index([userId])
+}
+
+model CaseNote {
+  id        String   @id @default(cuid())
+  caseId    String
+  authorId  String
+  body      String
+  createdAt DateTime @default(now())
+  case      Case     @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, createdAt])
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  DONE
+}
+
+model CaseTask {
+  id          String     @id @default(cuid())
+  caseId      String
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  assigneeId  String?
+  dueAt       DateTime?
+  createdById String
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  case        Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, status])
+}
+
+model CaseStatusChange {
+  id          String      @id @default(cuid())
+  caseId      String
+  fromStatus  CaseStatus?
+  toStatus    CaseStatus
+  reason      String?
+  changedById String
+  changedAt   DateTime    @default(now())
+  case        Case        @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  @@index([caseId, changedAt])
+}
+
+// ─────────────────────────────────────────────────────────── M3 candidates
+
+enum Platform {
+  FACEBOOK
+  INSTAGRAM
+  TIKTOK
+  WHATSAPP
+  EMAIL
+  PHONE
+  OTHER
+}
+
+model Candidate {
+  id          String   @id @default(cuid())
+  caseId      String
+  pseudonym   String // the only name shown by default, e.g. "Candidate A"
+  notes       String?
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  case      Case               @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  identity  CandidateIdentity?
+  handles   CandidateHandle[]
+  documents Document[]
+  monitors  SocialMonitor[]
+
+  @@unique([caseId, pseudonym])
+}
+
+// Real identity is split out so it can be restricted by permission
+// (candidate.identity.read) and every read can be audited.
+model CandidateIdentity {
+  candidateId    String    @id
+  realName       String
+  dateOfBirth    DateTime? @db.Date
+  identifiers    Json? // national ID, passport, etc.
+  legalBasis     String // statutory power or warrant authorising processing
+  legalReference String? // warrant / order number
+  recordedById   String
+  recordedAt     DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  candidate      Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+}
+
+model CandidateHandle {
+  id          String    @id @default(cuid())
+  candidateId String
+  platform    Platform
+  handle      String
+  profileUrl  String?
+  externalId  String?
+  createdAt   DateTime  @default(now())
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+
+  @@unique([candidateId, platform, handle])
+}
+
+// ──────────────────────────────────────────────────────────── M4 ingestion
+
+enum ScanStatus {
+  PENDING
+  CLEAN
+  INFECTED
+  NOT_SCANNED
+}
+
+// An uploaded file as received. The bytes are stored encrypted at storagePath
+// and never modified; sha256 is of the original bytes.
+model SourceFile {
+  id           String     @id @default(cuid())
+  caseId       String
+  filename     String
+  mimeType     String
+  sizeBytes    Int
+  sha256       String
+  storagePath  String
+  scanStatus   ScanStatus @default(PENDING)
+  uploadedById String
+  uploadedAt   DateTime   @default(now())
+  case         Case       @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  documents    Document[]
+
+  @@index([caseId, sha256])
+}
+
+enum DocumentRole {
+  QUESTIONED
+  KNOWN // known writing of a candidate
+  REFERENCE // impostor / background corpus
+}
+
+enum SourceType {
+  PASTE
+  TXT
+  DOCX
+  PDF
+  CSV
+  JSON
+  WHATSAPP
+  SOCIAL_CAPTURE
+}
+
+// A text unit for analysis: a whole file, or one message/post split from it.
+// originalText and sha256 are immutable (DB trigger); changes go into versions.
+model Document {
+  id             String       @id @default(cuid())
+  caseId         String
+  role           DocumentRole
+  candidateId    String? // set for KNOWN documents
+  sourceFileId   String?
+  sourceType     SourceType
+  title          String?
+  originalText   String
+  sha256         String // of originalText, UTF-8
+  wordCount      Int
+  language       Json? // engine composition: proportions, dominant language, CMI
+  authorLabel    String? // e.g. WhatsApp sender name, post author
+  authoredAt     DateTime?
+  platform       Platform?
+  sourceUrl      String?
+  externalId     String? // post / message id at the source
+  metadata       Json?
+  duplicateOfId  String? // exact-duplicate detection (same sha256 in the case)
+  excluded       Boolean      @default(false)
+  excludedReason String?
+  monitorId      String?
+  createdById    String
+  createdAt      DateTime     @default(now())
+
+  case        Case              @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  candidate   Candidate?        @relation(fields: [candidateId], references: [id])
+  sourceFile  SourceFile?       @relation(fields: [sourceFileId], references: [id])
+  duplicateOf Document?         @relation("duplicate", fields: [duplicateOfId], references: [id])
+  duplicates  Document[]        @relation("duplicate")
+  monitor     SocialMonitor?    @relation(fields: [monitorId], references: [id])
+  versions    DocumentVersion[]
+
+  @@unique([monitorId, externalId])
+  @@index([caseId, role])
+  @@index([caseId, sha256])
+  @@index([candidateId])
+}
+
+enum VersionChange {
+  ORIGINAL
+  REDACTION
+  PARTIAL_EXCLUSION // e.g. quoted or forwarded text removed
+  CORRECTION
+}
+
+// Working versions. Version 1 is the original. Analysis uses the latest
+// version, and each run records exactly which version ids it used.
+model DocumentVersion {
+  id          String             @id @default(cuid())
+  documentId  String
+  version     Int
+  change      VersionChange
+  text        String
+  sha256      String
+  spans       Json? // [{start, end, reason}] removed relative to the previous version
+  reason      String?
+  createdById String
+  createdAt   DateTime           @default(now())
+  document    Document           @relation(fields: [documentId], references: [id], onDelete: Restrict)
+  runInputs   AnalysisRunInput[]
+
+  @@unique([documentId, version])
+}
+
+// ─────────────────────────────────────────────────────────── analysis runs
+
+enum RunStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+// F6.9: every run stores the engine version, full settings and input hashes.
+model AnalysisRun {
+  id                String             @id @default(cuid())
+  caseId            String
+  status            RunStatus          @default(QUEUED)
+  progress          Int                @default(0)
+  jobId             String?
+  settings          Json
+  settingsSha256    String?
+  engineVersion     String?
+  lexiconVersions   Json?
+  result            Json?
+  error             String?
+  requestedById     String
+  queuedAt          DateTime           @default(now())
+  startedAt         DateTime?
+  finishedAt        DateTime?
+  cancelRequestedAt DateTime?
+  case              Case               @relation(fields: [caseId], references: [id], onDelete: Restrict)
+  inputs            AnalysisRunInput[]
+
+  @@index([caseId, queuedAt])
+}
+
+model AnalysisRunInput {
+  runId             String
+  documentVersionId String
+  role              DocumentRole
+  candidateId       String?
+  sha256            String
+  run               AnalysisRun     @relation(fields: [runId], references: [id], onDelete: Cascade)
+  documentVersion   DocumentVersion @relation(fields: [documentVersionId], references: [id])
+
+  @@id([runId, documentVersionId])
+}
+
+// ─────────────────────────────────────────────────────────── social capture
+
+model SocialMonitor {
+  id              String     @id @default(cuid())
+  caseId          String
+  candidateId     String? // captured posts become KNOWN writing for this candidate; else QUESTIONED
+  platform        Platform
+  target          String // profile URL or account id
+  authorName      String?
+  intervalMinutes Int        @default(10) // 5-15, enforced in the app
+  active          Boolean    @default(true)
+  autoScan        Boolean    @default(true)
+  lastPolledAt    DateTime?
+  lastError       String?
+  createdById     String
+  createdAt       DateTime   @default(now())
+  case            Case       @relation(fields: [caseId], references: [id], onDelete: Cascade)
+  candidate       Candidate? @relation(fields: [candidateId], references: [id])
+  documents       Document[]
+
+  @@index([active, lastPolledAt])
+}
+
+// ──────────────────────────────────────────────────────────── M12 audit
+
+// Append-only, hash-chained (F12.1, F12.3). A database trigger assigns seq, at,
+// prevHash and hash under an advisory lock and rejects UPDATE, DELETE and TRUNCATE.
+// Application code only ever INSERTs the descriptive columns.
+model AuditEvent {
+  id         BigInt   @id @default(autoincrement())
+  seq        BigInt   @unique @default(0) // chain position, set by trigger
+  at         DateTime @default(now()) @db.Timestamptz(6) // overwritten by trigger
+  actorId    String?
+  actorEmail String?
+  action     String // e.g. auth.login.success, case.create, candidate.identity.read
+  entityType String?
+  entityId   String?
+  caseId     String?
+  ip         String?
+  userAgent  String?
+  details    Json     @default("{}")
+  prevHash   String   @default("")
+  hash       String   @default("")
+
+  @@index([caseId, seq])
+  @@index([actorId, seq])
+  @@index([action])
+}
