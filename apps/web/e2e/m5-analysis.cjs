@@ -47,7 +47,10 @@ async function runAnalysis(page, caseUrl, { uncheck = [] } = {}) {
   const a = await p.getByRole("img", { name: /^Candidate A:/ }).getAttribute("aria-label");
   ok(/Kreol (9\d|100)%/.test(a), `Candidate A's writing identified as Kreol (${a})`);
   await p.locator("summary", { hasText: "Inputs" }).click();
-  ok(/Inputs \(261 document versions\)/.test(await p.locator("main").innerText()), "run record lists all 261 document versions used");
+  // Every non-excluded document in the case is used (the Evidence tab counts exactly those).
+  const evidenceCount = Number((await p.locator('nav[aria-label="Case sections"] a', { hasText: "Evidence" }).innerText()).match(/\d+/)[0]);
+  const inputs = Number((await p.locator("main").innerText()).match(/Inputs \((\d+) document versions\)/)[1]);
+  ok(inputs === evidenceCount && inputs >= 261, `run record lists every document version used (${inputs})`);
   ok(/[0-9a-f]{64}/.test(await p.locator("main").innerText()), "settings hash recorded");
   await p.screenshot({ path: path.join(shots, "m5-01-result.png"), fullPage: true });
 

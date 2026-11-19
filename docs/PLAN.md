@@ -41,9 +41,9 @@ Principles:
 6. M4: upload (TXT/DOCX/PDF/CSV/JSON/WhatsApp), auto-split, SHA-256 hashing, metadata, extraction preview, de-dup, exclusions and versions ✅ (no antivirus or OCR yet)
 7. M5 (engine): normalisation, tokenisation, function-word lexicons, word-level language ID, CMI, chunking ✅ (seed lexicons, pending client corpus)
 8. M6 (engine): features, Burrows/Eder/Cosine Delta, char n-gram cosine, style-marker distance, ensemble, confidence grade ✅ (grade thresholds uncalibrated until M9)
-9. Analysis jobs via BullMQ, with progress, cancellation and run records
-10. M10: verdict panel, score charts, language composition
-11. Social capture: author name/ID on the new-case form, Apify monitor jobs, auto-ingest and auto-scan (reuses the poc-apify approach)
+9. Analysis jobs via BullMQ, with progress, cancellation and run records ✅
+10. M10: verdict panel, score charts, language composition ✅
+11. Social capture: author name/ID on the new-case form, Apify monitor jobs, auto-ingest and auto-scan (reuses the poc-apify approach) (🟡 one-off "check a Facebook post" done, needs APIFY_TOKEN for live use; scheduled monitors pending)
 
 ## Phase 2 — Forensic depth
 

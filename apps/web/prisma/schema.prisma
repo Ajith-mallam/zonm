@@ -141,6 +141,7 @@ model Case {
   sourceFiles   SourceFile[]
   documents     Document[]
   runs          AnalysisRun[]
+  captures      CaptureJob[]
   monitors      SocialMonitor[]
 
   @@index([status])
@@ -476,4 +477,37 @@ model AuditEvent {
   @@index([caseId, seq])
   @@index([actorId, seq])
   @@index([action])
+}
+
+// ─────────────────────────────────────────────── one-off post capture
+
+enum CaptureStatus {
+  QUEUED
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+// "Check this post": fetch one public social media post, store the raw data
+// as evidence, import its text as questioned writing and optionally analyse it.
+model CaptureJob {
+  id            String        @id @default(cuid())
+  caseId        String
+  platform      Platform
+  url           String // canonical post URL as requested
+  status        CaptureStatus @default(QUEUED)
+  error         String?
+  autoAnalyse   Boolean       @default(true)
+  providerRunId String? // Apify run id
+  costUsd       Float?
+  sourceFileId  String? // raw provider data, stored as evidence
+  documentId    String? // imported questioned document
+  analysisRunId String?
+  requestedById String
+  createdAt     DateTime      @default(now())
+  startedAt     DateTime?
+  finishedAt    DateTime?
+  case          Case          @relation(fields: [caseId], references: [id], onDelete: Restrict)
+
+  @@index([caseId, createdAt])
 }

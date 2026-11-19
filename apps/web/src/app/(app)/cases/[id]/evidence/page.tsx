@@ -1,6 +1,9 @@
 import type { Prisma } from "@prisma/client";
 import Link from "next/link";
-import { Alert, Badge, buttonClass, Card, Input, Select, Table } from "@/components/ui";
+import { ActionForm } from "@/components/action-form";
+import { SubmitButton } from "@/components/forms";
+import { Alert, Badge, buttonClass, Card, Input, Label, Select, Table } from "@/components/ui";
+import { startCaptureAction } from "./capture/actions";
 import { getCaseAccess } from "@/lib/case-access";
 import { prisma } from "@/lib/db";
 import { fmtBytes } from "@/lib/evidence";
@@ -31,7 +34,7 @@ export default async function EvidencePage({ params, searchParams }: { params: P
     ...(q && { OR: [{ authorLabel: { contains: q, mode: "insensitive" } }, { title: { contains: q, mode: "insensitive" } }] }),
   };
 
-  const [docs, total, summary, files] = await Promise.all([
+  const [docs, total, summary, files, captures] = await Promise.all([
     prisma.document.findMany({
       where,
       orderBy: [{ role: "desc" }, { authoredAt: { sort: "asc", nulls: "last" } }, { createdAt: "asc" }],
@@ -42,6 +45,7 @@ export default async function EvidencePage({ params, searchParams }: { params: P
     prisma.document.count({ where }),
     prisma.document.groupBy({ by: ["role", "candidateId"], where: { caseId: id, excluded: false }, _count: { _all: true }, _sum: { wordCount: true } }),
     prisma.sourceFile.findMany({ where: { caseId: id }, orderBy: { uploadedAt: "desc" }, include: { _count: { select: { documents: true } } } }),
+    prisma.captureJob.findMany({ where: { caseId: id }, orderBy: { createdAt: "desc" }, take: 10 }),
   ]);
   const uploaders = new Map(
     (await prisma.user.findMany({ where: { id: { in: [...new Set(files.map((f) => f.uploadedById))] } }, select: { id: true, name: true } })).map((u) => [u.id, u.name]),
@@ -97,6 +101,38 @@ export default async function EvidencePage({ params, searchParams }: { params: P
           </Card>
         )}
       </div>
+
+      {a.can("document.upload") && (
+        <Card>
+          <h2 className="mb-1 font-semibold">Check a Facebook post</h2>
+          <p className="mb-3 text-sm text-black/60 dark:text-white/60">
+            Paste the link to a public post. Its text is captured, stored as questioned evidence with its hash, and can be compared with the candidates straight away.
+          </p>
+          <ActionForm action={startCaptureAction.bind(null, id)} className="flex flex-wrap items-end gap-3">
+            <div className="min-w-72 flex-1">
+              <Label htmlFor="post-url">Post URL</Label>
+              <Input id="post-url" name="url" required placeholder="https://www.facebook.com/…/posts/…" maxLength={500} />
+            </div>
+            {a.can("analysis.run") && (
+              <label className="flex items-center gap-2 pb-2 text-sm">
+                <input type="checkbox" name="autoAnalyse" defaultChecked /> Check authorship against the candidates
+              </label>
+            )}
+            <SubmitButton pendingText="Starting…">Check post</SubmitButton>
+          </ActionForm>
+          {captures.length > 0 && (
+            <ul className="mt-4 space-y-1 text-sm">
+              {captures.map((c) => (
+                <li key={c.id} className="flex flex-wrap items-center gap-2">
+                  <Badge tone={c.status === "SUCCEEDED" ? "green" : c.status === "FAILED" ? "red" : "blue"}>{c.status === "SUCCEEDED" ? "Captured" : c.status === "FAILED" ? "Failed" : "In progress"}</Badge>
+                  <Link href={`/cases/${id}/evidence/capture/${c.id}`} className="max-w-xl truncate text-blue-700 underline dark:text-blue-300">{c.url}</Link>
+                  <span className="text-xs text-black/50 dark:text-white/50">{fmtDateTime(c.createdAt)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Card>
+      )}
 
       <section>
         <form className="mb-3 flex flex-wrap gap-2" action={`/cases/${id}/evidence`}>
