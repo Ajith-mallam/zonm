@@ -1,0 +1,19 @@
+{
+  "language": "crs",
+  "name": "Kreol Seselwa",
+  "version": "seed-2026.11",
+  "source": "Seed list compiled by ZONM NET developers from standard Kreol Seselwa orthography. Not yet reviewed by a native-speaker linguist; accuracy depends on the client-supplied corpus (F5.5, M13).",
+  "function_words": [
+    "mon", "ou", "i", "li", "nou", "zot", "son", "sa", "sannla", "sanmenm", "en", "bann", "lot", "kek", "tou", "menm", "sak",
+    "pe", "ti", "pou", "in", "fin", "ki", "ek", "avek", "dan", "lo", "anba", "lao", "kot", "devan", "deryer", "akote", "ziska", "depi", "pour",
+    "me", "si", "pa", "napa", "nanryen", "personn", "okenn", "annan", "ena", "pa'n",
+    "konman", "kimanyer", "kote", "kan", "kifer", "kiler", "kwa", "akoz", "parski", "alor", "donk", "oubyen", "ouswa", "swa", "ni",
+    "osi", "ankor", "deza", "touzour", "zanmen", "pli", "plis", "mwens", "tro", "byen", "isi", "laba", "aprezan", "zis", "parey", "tousel", "sel",
+    "ganny", "kapab", "kapav", "bezwen", "fodre", "anvi", "oule", "kiksoz", "nenport", "lepli", "mem", "la", "sa'n", "in'n"
+  ],
+  "common_words": [
+    "lakaz", "zanfan", "dimoun", "manze", "dormi", "travay", "lekol", "lanmer", "bato", "pwason", "diri", "kari", "zoli", "gran", "pti", "bon", "move", "mersi", "bonzour", "bonswar", "wi", "non",
+    "lavi", "lamen", "lapli", "soley", "semenn", "lannen", "zour", "aswar", "demen", "yer", "ozordi", "konnen", "koz", "koze", "dir", "ale", "vini", "fer", "war", "get", "tande", "ekri", "lir", "achte", "vann",
+    "kontan", "sir", "vre", "zanmi", "papa", "manman", "frer", "ser", "madanm", "misye", "gouvernman", "lepep", "pei", "larzan", "lapolis", "lalwa", "lazistis", "lakour", "nouvel", "kozman", "dimoun", "lezot", "zonm", "fanm", "pitit", "lafanmir", "lasante", "lekonomi", "zil", "laplaz"
+  ]
+}

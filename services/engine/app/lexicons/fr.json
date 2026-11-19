@@ -1,0 +1,22 @@
+{
+  "language": "fr",
+  "name": "French",
+  "version": "seed-2026.11",
+  "source": "Seed list compiled by ZONM NET developers. Replace or extend with a validated corpus (F5.5, M13).",
+  "function_words": [
+    "a", "à", "afin", "ai", "ainsi", "alors", "après", "as", "au", "aucun", "aucune", "aussi", "autre", "autres", "aux", "avant", "avec", "avez", "avoir", "avons", "ayant",
+    "beaucoup", "bien", "ça", "car", "ce", "ceci", "cela", "celle", "celui", "ces", "cet", "cette", "chaque", "chez", "comme", "comment",
+    "dans", "de", "depuis", "des", "deux", "devant", "donc", "dont", "du", "elle", "elles", "en", "encore", "entre", "es", "est", "et", "été", "êtes", "être", "eu", "eux",
+    "fait", "faut", "il", "ils", "j'ai", "je", "jamais", "jusqu'à", "la", "là", "le", "les", "leur", "leurs", "lui",
+    "ma", "mais", "me", "même", "mes", "moi", "moins", "mon", "ne", "ni", "nos", "notre", "nous", "on", "ont", "ou", "où",
+    "par", "parce", "pas", "pendant", "peu", "peut", "plus", "plutôt", "pour", "pourquoi", "quand", "que", "quel", "quelle", "quelque", "quelques", "qui", "quoi",
+    "sa", "sans", "se", "selon", "ses", "si", "sois", "soit", "sommes", "son", "sont", "sous", "suis", "sur",
+    "ta", "tant", "te", "tes", "toi", "ton", "toujours", "tous", "tout", "toute", "toutes", "très", "trop", "tu", "un", "une", "vers", "voici", "voilà", "vos", "votre", "vous", "y",
+    "c'est", "c'était", "qu'il", "qu'elle", "qu'on", "n'est", "n'a", "n'y", "d'un", "d'une", "l'on", "s'il", "j'en", "m'a", "t'as"
+  ],
+  "common_words": [
+    "gens", "temps", "savoir", "sais", "pense", "bon", "bonne", "faire", "aller", "veux", "voir", "dire", "dit", "venir", "prendre", "regarde", "jour", "aujourd'hui", "demain", "hier",
+    "chose", "choses", "vraiment", "rien", "quelqu'un", "merci", "oui", "non", "d'accord",
+    "gouvernement", "pays", "argent", "travail", "école", "maison", "famille", "ami", "amis", "enfants", "police", "tribunal", "loi", "île", "nouvelles", "vrai", "vie", "amour", "besoin"
+  ]
+}
