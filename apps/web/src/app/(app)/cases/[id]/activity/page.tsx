@@ -30,6 +30,11 @@ const ACTION_LABEL: Record<string, string> = {
   "document.include": "Document included",
   "document.version.create": "New document version",
   "document.reassign": "Document reassigned",
+  "analysis.run.request": "Analysis requested",
+  "analysis.run.complete": "Analysis finished",
+  "analysis.run.failed": "Analysis failed",
+  "analysis.run.cancel": "Analysis cancel requested",
+  "analysis.run.cancelled": "Analysis cancelled",
 };
 
 export default async function ActivityPage({ params }: { params: Promise<{ id: string }> }) {

@@ -9,3 +9,6 @@ __pycache__/
 .pytest_cache/
 storage/
 infra/devdb/data/
+infra/devredis/bin/
+infra/devredis/data/
+infra/devredis/download/

@@ -14,11 +14,15 @@
     "user:create": "tsx --env-file=.env scripts/create-admin.ts",
     "db:seed-demo": "tsx --env-file=.env scripts/seed-demo.ts",
     "test:e2e": "node --env-file-if-exists=.env e2e/run.cjs",
-    "dev:set-all-passwords": "tsx --env-file=.env scripts/set-all-passwords.ts"
+    "dev:set-all-passwords": "tsx --env-file=.env scripts/set-all-passwords.ts",
+    "worker": "tsx --env-file=.env scripts/worker.ts"
   },
   "dependencies": {
     "@node-rs/argon2": "2.2.2",
     "@prisma/client": "6.19.3",
+    "apify-client": "2.25.0",
+    "bullmq": "6.7.0",
+    "ioredis": "6.0.0",
     "mammoth": "1.13.0",
     "next": "15.5.29",
     "next-auth": "5.0.0-beta.32",
