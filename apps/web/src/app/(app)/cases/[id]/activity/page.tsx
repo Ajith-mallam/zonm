@@ -23,6 +23,13 @@ const ACTION_LABEL: Record<string, string> = {
   "candidate.identity.update": "Identity changed",
   "candidate.identity.read": "Identity viewed",
   "document.import": "Documents imported",
+  "evidence.upload": "File uploaded",
+  "evidence.download": "Original downloaded",
+  "evidence.integrity_failure": "INTEGRITY FAILURE",
+  "document.exclude": "Document excluded",
+  "document.include": "Document included",
+  "document.version.create": "New document version",
+  "document.reassign": "Document reassigned",
 };
 
 export default async function ActivityPage({ params }: { params: Promise<{ id: string }> }) {

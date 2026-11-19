@@ -7,11 +7,11 @@
 // reviews written in Candidate B's style, so later engine runs have a known
 // right answer.
 import type { Platform, Prisma, SourceType } from "@prisma/client";
-import { createHash } from "node:crypto";
 import { recordAudit } from "../src/lib/audit";
 import { allocateCaseReference } from "../src/lib/cases";
 import { prisma, type Tx } from "../src/lib/db";
 import { hashPassword } from "../src/lib/security/password";
+import { countWords, sha256Hex as sha256 } from "../src/lib/text";
 
 const DEMO_PASSWORD = "Sample-Kreol-Text-2026";
 const DOMAIN = "demo.zonm.local";
@@ -110,11 +110,6 @@ function makePosts(style: Style, seed: number, targetWords: number): string[] {
   return posts;
 }
 
-export function countWords(text: string): number {
-  return text.match(/\p{L}+(?:['’-]\p{L}+)*/gu)?.length ?? 0;
-}
-
-const sha256 = (t: string) => createHash("sha256").update(t, "utf8").digest("hex");
 
 // ───────────────────────────────────────────────────────────── seeding
 
@@ -137,10 +132,10 @@ async function addDocuments(tx: Tx, caseId: string, createdById: string, specs: 
       metadata: { seed: "demo" } satisfies Prisma.InputJsonValue,
       createdById,
     })),
-    select: { id: true, originalText: true, sha256: true },
+    select: { id: true, originalText: true, sha256: true, wordCount: true },
   });
   await tx.documentVersion.createMany({
-    data: docs.map((d) => ({ documentId: d.id, version: 1, change: "ORIGINAL" as const, text: d.originalText, sha256: d.sha256, createdById })),
+    data: docs.map((d) => ({ documentId: d.id, version: 1, change: "ORIGINAL" as const, text: d.originalText, sha256: d.sha256, wordCount: d.wordCount, createdById })),
   });
   return docs.length;
 }

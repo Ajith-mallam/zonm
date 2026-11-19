@@ -25,19 +25,22 @@ export function Label({ className, ...p }: ComponentProps<"label">) {
   return <label className={cx("mb-1 block text-sm font-medium", className)} {...p} />;
 }
 
-const field =
-  "w-full rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 dark:border-white/15 dark:bg-black/20";
+const fieldBase =
+  "rounded-md border border-black/15 bg-white px-3 py-2 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 dark:border-white/15 dark:bg-black/20";
+
+/** Full width unless the caller sets a width (w-*); Tailwind cannot resolve two width classes reliably. */
+const field = (className?: string) => cx(/(^|\s)w-/.test(className ?? "") ? "" : "w-full", fieldBase, className);
 
 export function Input({ className, ...p }: ComponentProps<"input">) {
-  return <input className={cx(field, className)} {...p} />;
+  return <input className={field(className)} {...p} />;
 }
 
 export function Select({ className, ...p }: ComponentProps<"select">) {
-  return <select className={cx(field, className)} {...p} />;
+  return <select className={field(className)} {...p} />;
 }
 
 export function Textarea({ className, ...p }: ComponentProps<"textarea">) {
-  return <textarea className={cx(field, className)} {...p} />;
+  return <textarea className={field(className)} {...p} />;
 }
 
 const variants = {

@@ -72,6 +72,10 @@ async function submit(page, form, name) {
   ]);
   await settle(page);
 }
-const alertText = async (scope) => ((await scope.getByRole("alert").count()) ? (await scope.getByRole("alert").first().innerText()).trim() : "");
+// Form errors render with role="alert"; skip the route announcer Next.js adds to every page.
+const alertText = async (scope) => {
+  const a = scope.locator('[role="alert"]:not(#__next-route-announcer__)');
+  return (await a.count()) ? (await a.first().innerText()).trim() : "";
+};
 
 module.exports = { MFA_REQUIRED, shots, BASE, PW, RUN, ok, done, totp, createUser, launch, onboard, settle, submit, alertText };

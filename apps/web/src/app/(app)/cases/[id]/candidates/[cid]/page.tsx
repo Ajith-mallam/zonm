@@ -38,7 +38,7 @@ export default async function CandidatePage({ params }: { params: Promise<{ id: 
         <Card>
           <h3 className="mb-3 font-semibold">Known writing</h3>
           <SufficiencyMeter s={writing.get(c.id) ?? noWriting} />
-          <p className="mt-3 text-xs text-black/50 dark:text-white/50">Documents are added on the Evidence page (M4).</p>
+          <p className="mt-3 text-xs"><Link className="text-blue-700 underline dark:text-blue-300" href={`/cases/${id}/evidence?role=KNOWN&candidate=${c.id}`}>View known writing</Link> · add more on the Evidence tab.</p>
         </Card>
 
         <Card>

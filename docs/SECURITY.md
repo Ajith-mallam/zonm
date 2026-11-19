@@ -36,6 +36,15 @@ To detect tampering by a database superuser, periodically export the chain head 
 - `SourceFile` identity (`sha256`, `storagePath`, `sizeBytes`, `caseId`) cannot be updated.
 - Each analysis run records the exact `DocumentVersion` ids and hashes it used (`AnalysisRunInput`), along with the engine version, lexicon versions, full settings and the settings hash (F6.9).
 
+## Evidence files (M4)
+
+- Uploads are stored byte-for-byte, encrypted with AES-256-GCM (`STORAGE_ENCRYPTION_KEY`) and bound to their SourceFile id as associated data. A file is written once through a hard link and can never be overwritten.
+- The SHA-256 of the original bytes is recorded at upload. Every download and every import re-hashes the decrypted file and refuses on mismatch. A mismatch is logged as `evidence.integrity_failure`.
+- Downloads are always served as `application/octet-stream` attachments with `nosniff`, so uploaded content is never rendered by the browser.
+- Uploads are checked for type by extension and file signature (a renamed file is refused), limited to 25 MB, and same-origin checked. Antivirus scanning is not implemented yet (`scanStatus = NOT_SCANNED`; open client item: which AV engine).
+- Each imported text records its own SHA-256. Exclusions are flags; redactions and partial exclusions create new versions while version 1 keeps the original text.
+- The key must be backed up separately from the storage directory. Losing it makes the evidence unreadable.
+
 ## Authentication (M1)
 
 | Control | Implementation | Default |
