@@ -1,4 +1,5 @@
 // M3 candidate rules. Pure functions, unit-tested.
+import type { Platform } from "@prisma/client";
 
 /**
  * Known-writing thresholds. 1,000 words matches the engine's
@@ -73,10 +74,12 @@ export function normaliseHandle(platform: string, handle: string): string {
   return h.replace(/^@/, "");
 }
 
-export const PLATFORM_LABEL: Record<string, string> = {
+/** Every platform must have a label (typed against the enum, so a new platform fails to compile). */
+export const PLATFORM_LABEL: Record<Platform, string> = {
   FACEBOOK: "Facebook",
   INSTAGRAM: "Instagram",
   TIKTOK: "TikTok",
+  X: "X (Twitter)",
   WHATSAPP: "WhatsApp",
   EMAIL: "E-mail",
   PHONE: "Phone",

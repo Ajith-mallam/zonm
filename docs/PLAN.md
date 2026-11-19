@@ -24,7 +24,7 @@ Principles:
 
 ## Agreed scope constraints
 
-- Social capture covers **public** Facebook, Instagram and TikTok posts only, via Apify scraping. This breaches platform terms of service, and scraper accounts can be blocked.
+- Social capture covers **public** Facebook, Instagram, TikTok and X posts only, via Apify scraping (X added at the client's request, 2026-11-19). This breaches platform terms of service, and scraper accounts can be blocked.
 - Capture polls every **5–15 minutes** (configurable), not every 30 seconds. The UI refreshes every 30 seconds.
 - WhatsApp is ingested only from **chat exports**. No live capture exists.
 - Kreol language ID accuracy depends on a client-supplied or co-built corpus (F5.5).
@@ -43,7 +43,7 @@ Principles:
 8. M6 (engine): features, Burrows/Eder/Cosine Delta, char n-gram cosine, style-marker distance, ensemble, confidence grade ✅ (grade thresholds uncalibrated until M9)
 9. Analysis jobs via BullMQ, with progress, cancellation and run records ✅
 10. M10: verdict panel, score charts, language composition ✅
-11. Social capture: author name/ID on the new-case form, Apify monitor jobs, auto-ingest and auto-scan (reuses the poc-apify approach) (🟡 one-off "check a Facebook post" done, needs APIFY_TOKEN for live use; scheduled monitors pending)
+11. Social capture: author name/ID on the new-case form, Apify monitor jobs, auto-ingest and auto-scan (reuses the poc-apify approach) (🟡 on-demand collection done for Facebook, Instagram, TikTok and X: profile = latest 10 posts, or a single post; scheduled monitors pending)
 
 ## Phase 2 — Forensic depth
 

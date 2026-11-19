@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ActionForm } from "@/components/action-form";
 import { SubmitButton } from "@/components/forms";
 import { Alert, Badge, buttonClass, Card, Input, Label, Select, Table } from "@/components/ui";
+import { ADAPTERS } from "@/lib/capture/platforms";
 import { startCaptureAction } from "./capture/actions";
 import { getCaseAccess } from "@/lib/case-access";
 import { prisma } from "@/lib/db";
@@ -104,27 +105,40 @@ export default async function EvidencePage({ params, searchParams }: { params: P
 
       {a.can("document.upload") && (
         <Card>
-          <h2 className="mb-1 font-semibold">Check a Facebook post</h2>
+          <h2 className="mb-1 font-semibold">Collect social media posts</h2>
           <p className="mb-3 text-sm text-black/60 dark:text-white/60">
-            Paste the link to a public post. Its text is captured, stored as questioned evidence with its hash, and can be compared with the candidates straight away.
+            Paste a link from Facebook, Instagram, TikTok or X. A <strong>profile or page</strong> link collects its latest 10 posts; a <strong>post</strong> link collects that post.
+            The raw data is kept as evidence with its hash, and each post&apos;s text becomes a document.
           </p>
-          <ActionForm action={startCaptureAction.bind(null, id)} className="flex flex-wrap items-end gap-3">
-            <div className="min-w-72 flex-1">
-              <Label htmlFor="post-url">Post URL</Label>
-              <Input id="post-url" name="url" required placeholder="https://www.facebook.com/…/posts/…" maxLength={500} />
+          <ActionForm action={startCaptureAction.bind(null, id)} className="space-y-3">
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="min-w-72 flex-1">
+                <Label htmlFor="post-url">Link</Label>
+                <Input id="post-url" name="url" required placeholder="e.g. https://www.facebook.com/SomePage or https://x.com/someone/status/…" maxLength={500} />
+              </div>
+              <div className="w-72">
+                <Label htmlFor="use">Use the posts as</Label>
+                <Select id="use" name="use" defaultValue="questioned">
+                  <option value="questioned">Questioned (author unknown)</option>
+                  {candidates.map((c) => <option key={c.id} value={`known:${c.id}`}>Known writing of {c.pseudonym}</option>)}
+                </Select>
+              </div>
             </div>
-            {a.can("analysis.run") && (
-              <label className="flex items-center gap-2 pb-2 text-sm">
-                <input type="checkbox" name="autoAnalyse" defaultChecked /> Check authorship against the candidates
-              </label>
-            )}
-            <SubmitButton pendingText="Starting…">Check post</SubmitButton>
+            <div className="flex flex-wrap items-center gap-4">
+              {a.can("analysis.run") && (
+                <label className="flex items-center gap-2 text-sm">
+                  <input type="checkbox" name="autoAnalyse" defaultChecked /> Check authorship against the candidates (questioned posts)
+                </label>
+              )}
+              <SubmitButton pendingText="Starting…">Collect posts</SubmitButton>
+            </div>
           </ActionForm>
           {captures.length > 0 && (
             <ul className="mt-4 space-y-1 text-sm">
               {captures.map((c) => (
                 <li key={c.id} className="flex flex-wrap items-center gap-2">
-                  <Badge tone={c.status === "SUCCEEDED" ? "green" : c.status === "FAILED" ? "red" : "blue"}>{c.status === "SUCCEEDED" ? "Captured" : c.status === "FAILED" ? "Failed" : "In progress"}</Badge>
+                  <Badge tone={c.status === "SUCCEEDED" ? "green" : c.status === "FAILED" ? "red" : "blue"}>{c.status === "SUCCEEDED" ? `${c.postsImported ?? 0} collected` : c.status === "FAILED" ? "Failed" : "In progress"}</Badge>
+                  <span className="text-xs text-black/60 dark:text-white/60">{ADAPTERS[c.platform]?.label ?? c.platform} {c.kind === "PROFILE" ? "profile" : "post"}</span>
                   <Link href={`/cases/${id}/evidence/capture/${c.id}`} className="max-w-xl truncate text-blue-700 underline dark:text-blue-300">{c.url}</Link>
                   <span className="text-xs text-black/50 dark:text-white/50">{fmtDateTime(c.createdAt)}</span>
                 </li>

@@ -219,6 +219,7 @@ enum Platform {
   FACEBOOK
   INSTAGRAM
   TIKTOK
+  X
   WHATSAPP
   EMAIL
   PHONE
@@ -481,6 +482,11 @@ model AuditEvent {
 
 // ─────────────────────────────────────────────── one-off post capture
 
+enum CaptureKind {
+  POST // one post
+  PROFILE // the latest posts of a profile or page
+}
+
 enum CaptureStatus {
   QUEUED
   RUNNING
@@ -488,13 +494,21 @@ enum CaptureStatus {
   FAILED
 }
 
-// "Check this post": fetch one public social media post, store the raw data
-// as evidence, import its text as questioned writing and optionally analyse it.
+// Collect public social media posts (one post, or the latest posts of a profile),
+// store the raw data as evidence, import the texts as questioned writing or as a
+// candidate's known writing, and optionally analyse them.
 model CaptureJob {
   id            String        @id @default(cuid())
   caseId        String
   platform      Platform
   url           String // canonical post URL as requested
+  kind          CaptureKind   @default(POST)
+  maxPosts      Int           @default(10)
+  role          DocumentRole  @default(QUESTIONED) // what the captured posts are imported as
+  candidateId   String? // for KNOWN: whose writing
+  postsFound    Int?
+  postsImported Int?
+  postsSkipped  Int? // already in the case
   status        CaptureStatus @default(QUEUED)
   error         String?
   autoAnalyse   Boolean       @default(true)
