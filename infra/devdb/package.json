@@ -1,0 +1,8 @@
+{
+  "name": "@zonm/devdb",
+  "private": true,
+  "description": "PostgreSQL 16 for local development without admin rights (embedded binaries).",
+  "type": "module",
+  "scripts": { "start": "node start.mjs" },
+  "dependencies": { "embedded-postgres": "16.15.0-beta.19" }
+}
