@@ -4,13 +4,13 @@ import { FormErrors, SubmitButton } from "@/components/forms";
 import { Input, Label } from "@/components/ui";
 import { changePasswordAction } from "@/lib/auth/actions";
 
-export function PasswordForm() {
+export function PasswordForm({ temporary = false }: { temporary?: boolean }) {
   const [state, action] = useActionState(changePasswordAction, undefined);
   return (
     <form action={action} className="space-y-4">
       <FormErrors state={state} />
       <div>
-        <Label htmlFor="current">Current password</Label>
+        <Label htmlFor="current">{temporary ? "Temporary password (the one you just signed in with)" : "Current password"}</Label>
         <Input id="current" name="current" type="password" autoComplete="current-password" required />
       </div>
       <div>

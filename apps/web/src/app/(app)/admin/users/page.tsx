@@ -46,7 +46,7 @@ export default async function UsersPage() {
                     ) : (
                       <form action={setRoleAction} className="flex gap-1">
                         <input type="hidden" name="userId" value={u.id} />
-                        <Select name="role" defaultValue={u.role} className="w-32 py-1 text-xs" aria-label={`Role for ${u.email}`}>
+                        <Select name="role" defaultValue={u.role} className="w-32 shrink-0 py-1 text-xs" aria-label={`Role for ${u.email}`}>
                           {Object.values(Role).map((r) => (
                             <option key={r}>{r}</option>
                           ))}

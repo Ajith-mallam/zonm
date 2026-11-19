@@ -60,7 +60,8 @@ export const ROLE_GLOBAL: Record<Role, ReadonlySet<GlobalPermission>> = {
 export const ROLE_CASE_CAP: Record<Role, ReadonlySet<CasePermission>> = {
   ADMIN: new Set([]),
   SUPERVISOR: ALL_CASE,
-  ANALYST: new Set(ANALYST_WORK),
+  // case.team.manage only takes effect when the analyst is the case LEAD.
+  ANALYST: new Set([...ANALYST_WORK, "case.team.manage"]),
   REVIEWER: new Set(REVIEW_WORK),
   AUDITOR: new Set(["case.read"]),
 };

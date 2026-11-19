@@ -1,6 +1,7 @@
 "use server";
 // M1 server actions: sign-in, MFA enrolment and challenge, password change, sign-out.
 import { AuthError } from "next-auth";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { signIn, signOut } from "@/auth";
@@ -17,6 +18,15 @@ import { currentRequestContext } from "./request-context";
 import { getCurrentSession, requireSession } from "./session";
 
 export type FormState = { error?: string; errors?: string[]; recoveryCodes?: string[] } | undefined;
+
+/**
+ * Auth state changed (MFA verified, password changed): drop every cached route
+ * in the client router. Otherwise a redirect cached before the change (e.g.
+ * "/" -> "/mfa/setup") is replayed and the user loops between gates.
+ */
+function authStateChanged() {
+  revalidatePath("/", "layout");
+}
 
 const GENERIC_LOGIN_ERROR = "Sign-in failed. Check your e-mail and password, or try again later.";
 
@@ -76,6 +86,8 @@ export async function confirmMfaEnrolment(_: FormState, form: FormData): Promise
     await tx.userSession.update({ where: { id: s.session.id }, data: { mfaVerifiedAt: new Date() } });
     await recordAudit(tx, { action: "auth.mfa.enrolled", actor: user, entityType: "User", entityId: user.id, ...ctx });
   });
+  // No revalidation here: re-rendering /mfa/setup would redirect away before
+  // the recovery codes are read. The continue link does a full page load.
   return { recoveryCodes: codes };
 }
 
@@ -125,6 +137,7 @@ export async function verifyMfaAction(_: FormState, form: FormData): Promise<For
       details: { method, ...(remaining !== undefined && { recoveryCodesRemaining: remaining }) },
     });
   });
+  authStateChanged();
   redirect("/");
 }
 
@@ -165,5 +178,6 @@ export async function changePasswordAction(_: FormState, form: FormData): Promis
     });
     await recordAudit(tx, { action: "auth.password.changed", actor: user, entityType: "User", entityId: user.id, ...ctx });
   });
+  authStateChanged();
   redirect("/");
 }

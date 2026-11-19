@@ -21,7 +21,7 @@ export default async function ChangePasswordPage() {
           Use at least {PASSWORD_POLICY.minLength} characters with {PASSWORD_POLICY.minCharClasses} of: lower-case, upper-case, digits, symbols.
           A short phrase of several words works well.
         </p>
-        <PasswordForm />
+        <PasswordForm temporary={s.user.mustChangePassword} />
         {s.passwordChangeRequired ? <SignOutButton /> : <Link href="/" className="block text-center text-black/60 underline dark:text-white/60">Cancel</Link>}
       </div>
     </GateShell>

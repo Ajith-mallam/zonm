@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useActionState } from "react";
 import { FormErrors, SubmitButton } from "@/components/forms";
 import { Alert, buttonClass, Input, Label } from "@/components/ui";
@@ -20,9 +19,11 @@ export function EnrolForm() {
             <li key={c}>{c}</li>
           ))}
         </ul>
-        <Link href="/" className={buttonClass("primary", "w-full")}>
+        {/* Full page load: start the signed-in app with a fresh router state. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a href="/" className={buttonClass("primary", "w-full")}>
           I have saved my codes, continue
-        </Link>
+        </a>
       </div>
     );
   }
