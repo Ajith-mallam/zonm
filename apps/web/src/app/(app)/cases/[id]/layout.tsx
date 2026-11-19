@@ -14,10 +14,11 @@ export default async function CaseLayout({ children, params }: { children: React
   const { id } = await params;
   const a = await getCaseAccess(id);
   const c = a.case;
-  const [members, openTasks, notes] = await Promise.all([
+  const [members, openTasks, notes, candidates] = await Promise.all([
     prisma.caseMember.count({ where: { caseId: id } }),
     prisma.caseTask.count({ where: { caseId: id, status: { not: "DONE" } } }),
     prisma.caseNote.count({ where: { caseId: id } }),
+    prisma.candidate.count({ where: { caseId: id } }),
   ]);
 
   return (
@@ -44,6 +45,7 @@ export default async function CaseLayout({ children, params }: { children: React
         base={`/cases/${id}`}
         tabs={[
           { href: "", label: "Overview" },
+          { href: "/candidates", label: "Candidates", count: candidates },
           { href: "/team", label: "Team", count: members },
           { href: "/tasks", label: "Tasks", count: openTasks },
           { href: "/notes", label: "Notes", count: notes },

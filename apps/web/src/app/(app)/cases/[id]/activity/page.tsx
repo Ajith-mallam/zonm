@@ -14,6 +14,15 @@ const ACTION_LABEL: Record<string, string> = {
   "case.note.add": "Note added",
   "case.task.create": "Task created",
   "case.task.update": "Task updated",
+  "candidate.create": "Candidate added",
+  "candidate.update": "Candidate edited",
+  "candidate.delete": "Candidate deleted",
+  "candidate.handle.add": "Handle added",
+  "candidate.handle.remove": "Handle removed",
+  "candidate.identity.create": "Identity recorded",
+  "candidate.identity.update": "Identity changed",
+  "candidate.identity.read": "Identity viewed",
+  "document.import": "Documents imported",
 };
 
 export default async function ActivityPage({ params }: { params: Promise<{ id: string }> }) {

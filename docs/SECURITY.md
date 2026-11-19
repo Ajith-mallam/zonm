@@ -56,4 +56,12 @@ The policy values are defaults and still need the client's security policy (open
 
 ## Roles (M1)
 
-The permission matrix is in `apps/web/src/lib/rbac.ts`. Every case page and action loads the case through `getCaseAccess`, which answers 404 when the user has no access, so case existence isn't disclosed. Case status also limits actions: closed cases accept only notes and the lead's reopen/archive decision, and archived cases are read-only. Closing, archiving and reopening need the lead or a supervisor. Audit entries for cases record identifiers and field names, never titles, notes or reasons. Case permissions are the intersection of the user's system role cap and their role on the case team. Supervisors have oversight of every case. Administrators manage users and settings but have no access to case evidence. The role set (ADMIN, SUPERVISOR, ANALYST, REVIEWER, AUDITOR) is a proposal and needs the client's confirmation.
+The permission matrix is in `apps/web/src/lib/rbac.ts`. Every case page and action loads the case through `getCaseAccess`, which answers 404 when the user has no access, so case existence isn't disclosed. Case status also limits actions: closed cases accept only notes and the lead's reopen/archive decision, and archived cases are read-only. Closing, archiving and reopening need the lead or a supervisor. Audit entries for cases record identifiers and field names, never titles, notes or reasons.
+
+## Candidate identity (M3)
+
+- The real identity sits in `CandidateIdentity`, separate from the pseudonymous `Candidate`. Pages never send it to the browser by default.
+- Reading it needs `candidate.identity.read` (case lead, analysts and reviewers on the team, and supervisors). The user must state a purpose. Each reveal writes a `candidate.identity.read` audit event with that purpose.
+- Writing it needs `candidate.identity.write`, which supervisors alone hold. A legal basis is mandatory. Supervisors edit an existing identity only after revealing it, so every edit follows an audited read.
+- Audit events record the candidate id and which optional fields were given, never the name, date of birth or identifiers.
+- A candidate with documents or monitors attached cannot be deleted. Case permissions are the intersection of the user's system role cap and their role on the case team. Supervisors have oversight of every case. Administrators manage users and settings but have no access to case evidence. The role set (ADMIN, SUPERVISOR, ANALYST, REVIEWER, AUDITOR) is a proposal and needs the client's confirmation.

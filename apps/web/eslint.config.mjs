@@ -18,7 +18,13 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
+      "e2e/.artifacts/**",
     ],
+  },
+  {
+    // End-to-end scripts are plain CommonJS run by node.
+    files: ["e2e/**/*.cjs"],
+    rules: { "@typescript-eslint/no-require-imports": "off" },
   },
 ];
 

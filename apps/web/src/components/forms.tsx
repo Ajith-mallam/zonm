@@ -1,10 +1,14 @@
 "use client";
+import { useContext, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
-import type { ReactNode } from "react";
+import { ActionPendingContext } from "./pending-context";
 import { Alert, Button } from "./ui";
 
 export function SubmitButton({ children, pendingText, variant }: { children: ReactNode; pendingText?: string; variant?: "primary" | "secondary" | "danger" }) {
-  const { pending } = useFormStatus();
+  // useFormStatus covers plain <form action>; the context covers ActionForm.
+  const status = useFormStatus();
+  const actionPending = useContext(ActionPendingContext);
+  const pending = status.pending || actionPending;
   return (
     <Button type="submit" variant={variant} disabled={pending} className="w-full sm:w-auto">
       {pending ? (pendingText ?? "Working…") : children}
