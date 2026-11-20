@@ -45,6 +45,9 @@ async function onboard(browser, u) {
   await page.fill("#email", u.email);
   await page.fill("#password", u.temp);
   await Promise.all([page.waitForURL((url) => !url.pathname.startsWith("/login")), page.click("button[type=submit]")]);
+  // Sign-in lands on "/" first and the server then redirects to the gate it
+  // requires (/mfa/setup, /account/password); wait for that before deciding.
+  await page.waitForLoadState("networkidle");
   if (new URL(page.url()).pathname === "/mfa/setup") {
     await page.click("summary");
     u.secret = (await page.locator("details code").innerText()).replace(/\s/g, "");
@@ -52,6 +55,7 @@ async function onboard(browser, u) {
     await page.click("button[type=submit]");
     await Promise.all([page.waitForURL((url) => url.pathname !== "/mfa/setup"), page.click("text=I have saved my codes")]);
   }
+  await page.waitForLoadState("networkidle");
   if (new URL(page.url()).pathname === "/account/password") {
     await page.fill("#current", u.temp);
     await page.fill("#next", PW);
