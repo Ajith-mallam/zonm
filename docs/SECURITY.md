@@ -67,6 +67,8 @@ The IP recorded with each audit event comes from `X-Forwarded-For` only when `TR
 
 The policy values are defaults and still need the client's security policy (open item).
 
+**Initial deployment without MFA (decision 2026-11-20).** At the user's request, the first deployment runs with `AUTH_MFA_REQUIRED=false` and `AUTH_FORCE_PASSWORD_CHANGE=true`: sign-in is password-only, and temporary passwords must still be changed at first sign-in. When MFA is off, the MFA pages redirect into the app and the Users page shows no MFA controls. All MFA code and data stay in place. Setting `AUTH_MFA_REQUIRED=true` turns it back on; users then enrol at their next sign-in. Risk: a stolen password is enough to get in. Lockout (5 failures / 15 min), the password policy and the audit log remain. The client must accept this in writing and it must be revisited before handling live case data.
+
 **Test-mode switches.** `AUTH_MFA_REQUIRED=false` makes sign-in password-only (every session counts as MFA-verified, the MFA pages redirect into the app, and a warning banner is shown). `AUTH_FORCE_PASSWORD_CHANGE=false` skips the temporary/expired password change. Both default to on and are for local testing only. `AUTH_TEST_MODE_BANNER=false` hides the warning banner shown while MFA is off. A deployment checklist must confirm that neither is set to `false`. Login audit events record `mfaRequired`, so periods in test mode are visible in the audit log.
 
 ## Roles (M1)

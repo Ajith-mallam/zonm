@@ -12,26 +12,30 @@ const ROLES = [
   ["ADMIN", "Administrator: users and settings, no case access"],
 ] as const;
 
-function TemporaryPassword({ state }: { state: AdminState }) {
+/** Sign-in rules in force, so the message matches what the new user will see. */
+export type SignInRules = { mfa: boolean; forceChange: boolean };
+
+function TemporaryPassword({ state, rules }: { state: AdminState; rules: SignInRules }) {
   if (!state?.created) return null;
+  const steps = [rules.forceChange && "change it", rules.mfa && "set up two-step verification"].filter(Boolean);
   return (
     <Alert tone="success">
       Temporary password for <strong>{state.created.email}</strong>:
       <code className="mt-1 block select-all font-mono text-base">{state.created.temporaryPassword}</code>
-      Give it to the user through a separate channel. It is shown only once, and the user must change it and set up
-      two-step verification at first sign-in.
+      Give it to the user through a separate channel. It is shown only once.
+      {steps.length > 0 && ` At first sign-in the user must ${steps.join(" and ")}.`}
     </Alert>
   );
 }
 
-export function CreateUserForm() {
+export function CreateUserForm({ rules }: { rules: SignInRules }) {
   const [state, action] = useActionState(createUserAction, undefined);
   return (
     <Card className="h-fit">
       <h2 className="mb-4 font-semibold">Add user</h2>
       <form action={action} className="space-y-3">
         <FormErrors state={state} />
-        <TemporaryPassword state={state} />
+        <TemporaryPassword state={state} rules={rules} />
         <div>
           <Label htmlFor="name">Full name</Label>
           <Input id="name" name="name" required maxLength={200} />

@@ -1,6 +1,7 @@
 import { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
 import { Badge, Button, PageHeader, Select, Table } from "@/components/ui";
+import { FORCE_PASSWORD_CHANGE, MFA_REQUIRED } from "@/lib/auth/policy";
 import { requireSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/db";
 import { can } from "@/lib/rbac";
@@ -58,7 +59,7 @@ export default async function UsersPage() {
                   <td className="space-x-1">
                     <Badge tone={u.status === "ACTIVE" ? "green" : "neutral"}>{u.status === "ACTIVE" ? "Active" : "Disabled"}</Badge>
                     {isLocked(u) && <Badge tone="red">Locked</Badge>}
-                    {!u.mfaEnabledAt && <Badge tone="amber">No MFA</Badge>}
+                    {MFA_REQUIRED && !u.mfaEnabledAt && <Badge tone="amber">No MFA</Badge>}
                     {u.mustChangePassword && <Badge tone="blue">Temp password</Badge>}
                   </td>
                   <td className="whitespace-nowrap text-xs">{fmt(u.lastLoginAt)}</td>
@@ -72,7 +73,7 @@ export default async function UsersPage() {
                           </form>
                         )}
                         <ResetPasswordButton userId={u.id} />
-                        {u.mfaEnabledAt && (
+                        {MFA_REQUIRED && u.mfaEnabledAt && (
                           <form action={resetMfaAction}>
                             <input type="hidden" name="userId" value={u.id} />
                             <Button variant="secondary" className="py-1 text-xs">Reset MFA</Button>
@@ -93,7 +94,7 @@ export default async function UsersPage() {
             })}
           </tbody>
         </Table>
-        <CreateUserForm />
+        <CreateUserForm rules={{ mfa: MFA_REQUIRED, forceChange: FORCE_PASSWORD_CHANGE }} />
       </div>
     </>
   );
