@@ -27,4 +27,4 @@ if (-not (Test-Port 3100)) {
   Start-Part "Web" "$root\apps\web" "if (-not (Test-Path .next\BUILD_ID)) { npm run build }; npx next start -p 3100"
 } else { Write-Host "Web app already running" }
 
-Write-Host "Starting. Open http://localhost:3100 in a minute (password for test users: Zonm@1234)."
+Write-Host "Starting. Open http://localhost:3100 in a minute."
