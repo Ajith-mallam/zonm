@@ -5,3 +5,5 @@ tests
 Dockerfile
 requirements-dev.txt
 requirements-ml.txt
+.env*
+.vercel
