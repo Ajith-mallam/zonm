@@ -8,6 +8,28 @@ const { BASE, RUN, ok, done, createUser, launch, onboard, settle, submit, alertT
 const { buildDocx, buildPdf, whatsappChat } = require("./fixtures.cjs");
 
 const STORAGE = process.env.STORAGE_DIR ?? path.resolve(__dirname, "..", "storage");
+
+/** Direct access to a stored evidence file, to simulate tampering (test only). */
+function diskStore(file) {
+  return {
+    read: async () => fs.readFileSync(file),
+    replace: async (bytes) => {
+      fs.chmodSync(file, 0o666);
+      fs.writeFileSync(file, bytes);
+    },
+  };
+}
+function blobStore(pathname) {
+  const blob = require("@vercel/blob");
+  return {
+    read: async () => Buffer.from(await new Response((await blob.get(pathname, { access: "private", useCache: false })).stream).arrayBuffer()),
+    // Blob objects are write-once; an attacker with the store token would delete and re-upload.
+    replace: async (bytes) => {
+      await blob.del(pathname);
+      await blob.put(pathname, bytes, { access: "private", addRandomSuffix: false, contentType: "application/octet-stream" });
+    },
+  };
+}
 const sha = (b) => crypto.createHash("sha256").update(b).digest("hex");
 
 /** Upload a file through the real form; returns the URL the server redirected to. */
@@ -146,16 +168,16 @@ async function importNow(page) {
   const body = await dl.body();
   ok(dl.status() === 200 && sha(body) === sha(chat) && dl.headers()["x-evidence-sha256"] === sha(chat), "download returns the exact original bytes");
   ok(/attachment/.test(dl.headers()["content-disposition"] ?? "") && dl.headers()["content-type"] === "application/octet-stream", "originals are served as downloads, never rendered");
-  const stored = path.join(STORAGE, caseId, `${waFileId}.zne`);
-  const raw = fs.readFileSync(stored);
-  ok(!raw.includes(Buffer.from("Bonzour tout dimoun")), "stored file is encrypted at rest");
-  fs.chmodSync(stored, 0o666);
+  // The stored copy lives on local disk, or in Vercel Blob when STORAGE_DRIVER=blob.
+  const store = process.env.STORAGE_DRIVER === "blob" ? blobStore(`evidence/${caseId}/${waFileId}.zne`) : diskStore(path.join(STORAGE, caseId, `${waFileId}.zne`));
+  const raw = await store.read();
+  ok(!raw.includes(Buffer.from("Bonzour tout dimoun")), `stored file is encrypted at rest (${process.env.STORAGE_DRIVER === "blob" ? "Vercel Blob" : "disk"})`);
   const tampered = Buffer.from(raw);
   tampered[tampered.length - 5] ^= 0xff;
-  fs.writeFileSync(stored, tampered);
+  await store.replace(tampered);
   const bad = await L.request.get(`${BASE}/api/cases/${caseId}/files/${waFileId}`);
   ok(bad.status() === 500, `tampered file refused (status ${bad.status()})`);
-  fs.writeFileSync(stored, raw); // restore
+  await store.replace(raw); // restore
 
   // 9. Permissions
   await p.observer.goto(C + "/evidence");
