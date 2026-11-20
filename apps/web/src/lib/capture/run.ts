@@ -9,7 +9,6 @@ import { randomBytes } from "node:crypto";
 import { createRun, DEFAULT_SETTINGS } from "../analysis";
 import { recordAudit } from "../audit";
 import { prisma } from "../db";
-import { enqueue, QUEUES } from "../queue";
 import { writeEvidence } from "../storage";
 import { countWords, sha256Hex } from "../text";
 import { ADAPTERS, itemError, parseSocialUrl, pickRequestedPost, type CapturedPost, type PlatformAdapter } from "./platforms";
@@ -17,7 +16,7 @@ import { ADAPTERS, itemError, parseSocialUrl, pickRequestedPost, type CapturedPo
 /** Upper limit for one capture, whatever the price list says. */
 const MAX_COST_USD = 1;
 /** How long to wait for a scrape before aborting it (so it stops charging). */
-const MAX_WAIT_SECS = 600;
+const MAX_WAIT_SECS = Math.max(60, Number(process.env.CAPTURE_MAX_WAIT_SECS) || 600);
 const TERMINAL = new Set(["SUCCEEDED", "FAILED", "ABORTED", "TIMED-OUT"]);
 
 type MinimalApify = Pick<ApifyClient, "actor" | "dataset" | "user" | "run">;
@@ -234,7 +233,9 @@ export async function executeCapture(jobId: string, deps: { client?: MinimalApif
     });
     runId = ar.id;
     await prisma.captureJob.update({ where: { id: jobId }, data: { analysisRunId: ar.id } });
-    await enqueue(QUEUES.analysis, "analyze", { runId: ar.id }, ar.id);
+    // Inside a running job: the queue runner enqueues, the inline runner runs it now.
+    const { dispatchJob } = await import("../jobs");
+    await dispatchJob("analysis", ar.id, { inBackground: true });
   } catch (e) {
     const message = `The posts were collected, but the automatic analysis could not start: ${e instanceof Error ? e.message : String(e)}`;
     if (runId) await prisma.analysisRun.update({ where: { id: runId }, data: { status: "FAILED", error: message.slice(0, 1000), finishedAt: new Date() } }).catch(() => undefined);

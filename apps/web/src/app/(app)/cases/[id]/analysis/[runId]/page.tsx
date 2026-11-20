@@ -8,6 +8,7 @@ import { Alert, Badge, Card, Table } from "@/components/ui";
 import { METHOD_LABEL, METHODS, type EngineResult, type Method } from "@/lib/analysis";
 import { corpusSufficiency, SUFFICIENCY_LABEL, SUFFICIENCY_TONE } from "@/lib/candidates";
 import { getCaseAccess } from "@/lib/case-access";
+import { failAbandonedJobs, jobRunner } from "@/lib/jobs";
 import { prisma } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
 import { GRADE_ICON, GRADE_LABEL, GRADE_TONE, RUN_STATUS_LABEL, RUN_STATUS_TONE } from "@/lib/run-display";
@@ -25,6 +26,8 @@ const GRADE_TEXT = {
 export default async function RunPage({ params }: { params: Promise<{ id: string; runId: string }> }) {
   const { id, runId } = await params;
   const a = await getCaseAccess(id);
+  // No long-lived worker with the inline runner: fail jobs whose invocation died here.
+  if (jobRunner() === "inline") await failAbandonedJobs();
   const run = await prisma.analysisRun.findFirst({
     where: { id: runId, caseId: id },
     include: { inputs: { include: { documentVersion: { select: { version: true, wordCount: true, document: { select: { id: true, title: true } } } } } } },

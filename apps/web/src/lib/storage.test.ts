@@ -40,6 +40,11 @@ describe("evidence storage", () => {
     expect((await readEvidence("caseover1234/fileover1234.zne", "fileover1234")).toString()).toBe("original");
   });
 
+  it("validates blob paths before using them", async () => {
+    await expect(readEvidence("blob:evidence/../../other/x.zne", "fileabc12345")).rejects.toThrow(/Invalid storage path/);
+    await expect(readEvidence("blob:https://evil.example/x", "fileabc12345")).rejects.toThrow(/Invalid storage path/);
+  });
+
   it("rejects path tricks", async () => {
     await expect(writeEvidence("../escape1234", "fileabc12345", Buffer.from("x"))).rejects.toThrow(/Invalid id/);
     await expect(readEvidence("../../etc/passwd", "fileabc12345")).rejects.toThrow(/Invalid storage path/);

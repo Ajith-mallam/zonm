@@ -1,0 +1,7 @@
+# Phase 2 (M7-M9: SVM/LogReg, General Impostors, SHAP explanations).
+# Not imported yet; kept out of the runtime image so the engine stays small
+# enough for serverless hosting.
+-r requirements.txt
+scipy==1.15.0
+scikit-learn==1.6.0
+shap==0.46.0

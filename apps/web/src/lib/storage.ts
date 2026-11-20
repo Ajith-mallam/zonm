@@ -46,10 +46,39 @@ function resolve(storagePath: string): string {
   return full;
 }
 
-/** Store a new evidence file. Returns the relative storage path. */
+// ─────────────────────────────────────────────────────────────── drivers
+// STORAGE_DRIVER=local (default): files under STORAGE_DIR.
+// STORAGE_DRIVER=blob: private Vercel Blob objects (BLOB_READ_WRITE_TOKEN),
+// for hosts without a persistent disk. Either way the bytes are sealed with
+// AES-256-GCM before they leave this process. Stored paths of blob files start
+// with "blob:", so a file is always read from where it was written.
+
+const BLOB_PREFIX = "blob:";
+
+export function storageDriver(): "local" | "blob" {
+  return process.env.STORAGE_DRIVER === "blob" ? "blob" : "local";
+}
+
+async function writeBlob(rel: string, sealed: Buffer): Promise<string> {
+  const { put } = await import("@vercel/blob");
+  // addRandomSuffix false + no allowOverwrite: the store refuses to replace an
+  // existing evidence file, as the local driver does.
+  await put(`evidence/${rel}`, sealed, { access: "private", addRandomSuffix: false, contentType: "application/octet-stream" });
+  return `${BLOB_PREFIX}evidence/${rel}`;
+}
+
+async function readBlob(pathname: string): Promise<Buffer> {
+  const { get } = await import("@vercel/blob");
+  const res = await get(pathname, { access: "private", useCache: false });
+  if (!res || res.statusCode !== 200 || !res.stream) throw new Error("Evidence file not found in blob storage");
+  return Buffer.from(await new Response(res.stream).arrayBuffer());
+}
+
+/** Store a new evidence file. Returns its storage path. */
 export async function writeEvidence(caseId: string, fileId: string, bytes: Uint8Array): Promise<string> {
   if (!ID.test(caseId) || !ID.test(fileId)) throw new Error("Invalid id");
   const rel = `${caseId}/${fileId}.zne`;
+  if (storageDriver() === "blob") return writeBlob(rel, sealFile(bytes, fileId));
   const full = resolve(rel);
   await mkdir(path.dirname(full), { recursive: true });
   // Write to a temporary name, then hard-link into place: link() fails if the
@@ -66,5 +95,10 @@ export async function writeEvidence(caseId: string, fileId: string, bytes: Uint8
 }
 
 export async function readEvidence(storagePath: string, fileId: string): Promise<Buffer> {
+  if (storagePath.startsWith(BLOB_PREFIX)) {
+    const pathname = storagePath.slice(BLOB_PREFIX.length);
+    if (!/^evidence\/[a-z0-9]{8,40}\/[a-z0-9]{8,40}\.zne$/.test(pathname)) throw new Error("Invalid storage path");
+    return openFile(await readBlob(pathname), fileId);
+  }
   return openFile(await readFile(resolve(storagePath)), fileId);
 }

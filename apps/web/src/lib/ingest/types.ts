@@ -43,5 +43,7 @@ export class ExtractionError extends Error {
   }
 }
 
-export const MAX_UPLOAD_BYTES = 25 * 1024 * 1024;
+/** Upload size limit in MB: 25 by default; set MAX_UPLOAD_MB=4 on hosts with a request size limit (Vercel: 4.5 MB). */
+export const MAX_UPLOAD_MB = Math.min(25, Math.max(1, Number(process.env.MAX_UPLOAD_MB) || 25));
+export const MAX_UPLOAD_BYTES = MAX_UPLOAD_MB * 1024 * 1024;
 export const MAX_UNITS = 20_000;

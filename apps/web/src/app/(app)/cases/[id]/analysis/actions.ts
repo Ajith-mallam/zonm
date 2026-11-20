@@ -7,7 +7,8 @@ import { currentRequestContext } from "@/lib/auth/request-context";
 import { CaseActionError, requireCasePermission } from "@/lib/case-access";
 import { prisma } from "@/lib/db";
 import { formAction, type ActionResult } from "@/lib/form-state";
-import { enqueue, QUEUES, QueueUnavailableError, queue } from "@/lib/queue";
+import { dispatchJob, removeQueuedJob } from "@/lib/jobs";
+import { QueueUnavailableError } from "@/lib/queue";
 
 function int(form: FormData, name: string, def: number, min: number, max: number): number {
   const raw = form.get(name);
@@ -57,7 +58,7 @@ export async function startRunAction(caseId: string, _: ActionResult, form: Form
       return run;
     });
     try {
-      await enqueue(QUEUES.analysis, "analyze", { runId: run.id }, run.id);
+      await dispatchJob("analysis", run.id);
     } catch (e) {
       await prisma.analysisRun.update({ where: { id: run.id }, data: { status: "FAILED", error: (e as Error).message, finishedAt: new Date() } });
       throw e;
@@ -83,7 +84,7 @@ export async function cancelRunAction(caseId: string, runId: string): Promise<Ac
       });
       await recordAudit(tx, { action: "analysis.run.cancel", actor: a.user, entityType: "AnalysisRun", entityId: runId, caseId, ...ctx, details: { statusAtCancel: run.status } });
     });
-    if (run.status === "QUEUED") await queue(QUEUES.analysis).remove(runId).catch(() => undefined);
+    if (run.status === "QUEUED") await removeQueuedJob("analysis", runId);
     revalidatePath(`/cases/${caseId}/analysis/${runId}`);
   }, [CaseActionError]);
 }

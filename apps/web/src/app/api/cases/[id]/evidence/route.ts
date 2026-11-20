@@ -9,7 +9,7 @@ import { getCurrentSession } from "@/lib/auth/session";
 import { CaseActionError, requireCasePermission } from "@/lib/case-access";
 import { prisma } from "@/lib/db";
 import { checkSignature, sourceTypeFor } from "@/lib/ingest/extract";
-import { ExtractionError, MAX_UPLOAD_BYTES } from "@/lib/ingest/types";
+import { ExtractionError, MAX_UPLOAD_BYTES, MAX_UPLOAD_MB } from "@/lib/ingest/types";
 import { writeEvidence } from "@/lib/storage";
 import { sha256Hex } from "@/lib/text";
 
@@ -44,11 +44,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
 
   const len = Number(req.headers.get("content-length") ?? 0);
-  if (len > MAX_UPLOAD_BYTES + 64 * 1024) return back("The file is larger than 25 MB.");
+  if (len > MAX_UPLOAD_BYTES + 64 * 1024) return back(`The file is larger than ${MAX_UPLOAD_MB} MB.`);
   const form = await req.formData().catch(() => null);
   const file = form?.get("file");
   if (!(file instanceof File) || file.size === 0) return back("Choose a file to upload.");
-  if (file.size > MAX_UPLOAD_BYTES) return back("The file is larger than 25 MB.");
+  if (file.size > MAX_UPLOAD_BYTES) return back(`The file is larger than ${MAX_UPLOAD_MB} MB.`);
   const bytes = new Uint8Array(await file.arrayBuffer());
   const filename = file.name.replace(/[\\/]/g, "_").slice(0, 255) || "upload";
 

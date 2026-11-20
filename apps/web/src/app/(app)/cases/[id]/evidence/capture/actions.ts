@@ -6,7 +6,8 @@ import { CaptureInputError, parseSocialUrl } from "@/lib/capture/platforms";
 import { CaseActionError, requireCasePermission } from "@/lib/case-access";
 import { prisma } from "@/lib/db";
 import { formAction, type ActionResult } from "@/lib/form-state";
-import { enqueue, QUEUES, QueueUnavailableError } from "@/lib/queue";
+import { dispatchJob } from "@/lib/jobs";
+import { QueueUnavailableError } from "@/lib/queue";
 
 /** Posts fetched from a profile or page. */
 const PROFILE_POSTS = 10;
@@ -55,7 +56,7 @@ export async function startCaptureAction(caseId: string, _: ActionResult, form: 
       return job;
     });
     try {
-      await enqueue(QUEUES.capture, "capture", { jobId: job.id }, job.id);
+      await dispatchJob("capture", job.id);
     } catch (e) {
       await prisma.captureJob.update({ where: { id: job.id }, data: { status: "FAILED", error: (e as Error).message, finishedAt: new Date() } });
       throw e;

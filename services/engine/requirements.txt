@@ -1,9 +1,5 @@
+# Runtime dependencies of the engine (what app/ imports today).
 fastapi==0.162.0
 uvicorn[standard]==0.54.0
 pydantic==2.14.3
 numpy==2.2.1
-scipy==1.15.0
-scikit-learn==1.6.0
-shap==0.46.0
-pytest==9.2.0
-httpx==0.28.1

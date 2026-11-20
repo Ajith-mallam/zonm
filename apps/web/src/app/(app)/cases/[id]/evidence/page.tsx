@@ -6,19 +6,26 @@ import { Alert, Badge, buttonClass, Card, Input, Label, Select, Table } from "@/
 import { ADAPTERS } from "@/lib/capture/platforms";
 import { startCaptureAction } from "./capture/actions";
 import { getCaseAccess } from "@/lib/case-access";
+import { failAbandonedJobs, jobRunner } from "@/lib/jobs";
 import { prisma } from "@/lib/db";
 import { fmtBytes } from "@/lib/evidence";
 import { fmtDateTime } from "@/lib/format";
 import { ACCEPTED_EXTENSIONS } from "@/lib/ingest/extract";
+import { MAX_UPLOAD_MB } from "@/lib/ingest/types";
 import { snippet } from "@/lib/text";
 
 const PAGE = 100;
 const nf = new Intl.NumberFormat("en-GB");
 
+/** Server actions on this page may run a job inline (JOB_RUNNER=inline): allow up to 5 minutes. */
+export const maxDuration = 300;
+
 export default async function EvidencePage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<Record<string, string | undefined>> }) {
   const { id } = await params;
   const sp = await searchParams;
   const a = await getCaseAccess(id);
+  // No long-lived worker with the inline runner: fail jobs whose invocation died here.
+  if (jobRunner() === "inline") await failAbandonedJobs();
   const candidates = await prisma.candidate.findMany({ where: { caseId: id }, orderBy: { pseudonym: "asc" }, select: { id: true, pseudonym: true } });
   const pseud = new Map(candidates.map((c) => [c.id, c.pseudonym]));
 
@@ -95,7 +102,7 @@ export default async function EvidencePage({ params, searchParams }: { params: P
                 className="block w-full text-sm file:mr-3 file:rounded-md file:border-0 file:bg-blue-700 file:px-3 file:py-2 file:text-sm file:font-medium file:text-white"
               />
               <p className="text-xs text-black/50 dark:text-white/50">
-                TXT, DOCX, PDF, CSV, JSON, or a WhatsApp chat export (.txt). Up to 25 MB. The original is kept unchanged, encrypted and hashed.
+                TXT, DOCX, PDF, CSV, JSON, or a WhatsApp chat export (.txt). Up to {MAX_UPLOAD_MB} MB. The original is kept unchanged, encrypted and hashed.
               </p>
               <button className={buttonClass("primary")}>Upload and preview</button>
             </form>

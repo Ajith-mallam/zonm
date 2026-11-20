@@ -5,6 +5,7 @@ import { Alert, Badge, Card } from "@/components/ui";
 import type { EngineResult } from "@/lib/analysis";
 import { ADAPTERS } from "@/lib/capture/platforms";
 import { getCaseAccess } from "@/lib/case-access";
+import { failAbandonedJobs, jobRunner } from "@/lib/jobs";
 import { prisma } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
 import { GRADE_ICON, GRADE_LABEL, GRADE_TONE, RUN_STATUS_LABEL } from "@/lib/run-display";
@@ -12,6 +13,8 @@ import { GRADE_ICON, GRADE_LABEL, GRADE_TONE, RUN_STATUS_LABEL } from "@/lib/run
 export default async function CapturePage({ params }: { params: Promise<{ id: string; jobId: string }> }) {
   const { id, jobId } = await params;
   await getCaseAccess(id);
+  // No long-lived worker with the inline runner: fail jobs whose invocation died here.
+  if (jobRunner() === "inline") await failAbandonedJobs();
   const job = await prisma.captureJob.findFirst({ where: { id: jobId, caseId: id } });
   if (!job) notFound();
   const label = ADAPTERS[job.platform]?.label ?? job.platform;

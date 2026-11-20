@@ -11,11 +11,13 @@ import { hashPassword } from "../src/lib/security/password";
 
 const DEFAULT_PASSWORD = "Zonm@1234";
 
-const { values } = parseArgs({ options: { password: { type: "string", default: DEFAULT_PASSWORD } } });
+const { values } = parseArgs({ options: { password: { type: "string", default: DEFAULT_PASSWORD }, "allow-remote": { type: "boolean", default: false } } });
 
 async function main() {
   const url = process.env.DATABASE_URL ?? "";
-  if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url)) throw new Error("Refusing to change passwords on a non-local database.");
+  if (!/@(localhost|127\.0\.0\.1)[:/]/.test(url) && !values["allow-remote"]) {
+    throw new Error("Refusing to change passwords on a non-local database (pass --allow-remote for a dev deployment).");
+  }
   const password = values.password!;
   if (password.length < 4) throw new Error("Use at least 4 characters.");
 

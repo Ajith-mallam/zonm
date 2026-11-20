@@ -7,6 +7,7 @@ import { Badge, Card, Input, Label, Table } from "@/components/ui";
 import { DEFAULT_SETTINGS, METHOD_LABEL, METHODS, type EngineResult } from "@/lib/analysis";
 import { knownWriting, noWriting } from "@/lib/candidate-data";
 import { getCaseAccess } from "@/lib/case-access";
+import { failAbandonedJobs, jobRunner } from "@/lib/jobs";
 import { prisma } from "@/lib/db";
 import { fmtDateTime } from "@/lib/format";
 import { GRADE_ICON, GRADE_LABEL, GRADE_TONE, RUN_STATUS_LABEL, RUN_STATUS_TONE } from "@/lib/run-display";
@@ -15,9 +16,14 @@ import { startRunAction } from "./actions";
 
 const nf = new Intl.NumberFormat("en-GB");
 
+/** Server actions on this page may run a job inline (JOB_RUNNER=inline): allow up to 5 minutes. */
+export const maxDuration = 300;
+
 export default async function AnalysisPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const a = await getCaseAccess(id);
+  // No long-lived worker with the inline runner: fail jobs whose invocation died here.
+  if (jobRunner() === "inline") await failAbandonedJobs();
   const [runs, candidates, writing, questioned] = await Promise.all([
     prisma.analysisRun.findMany({ where: { caseId: id }, orderBy: { queuedAt: "desc" }, take: 50, include: { _count: { select: { inputs: true } } } }),
     prisma.candidate.findMany({ where: { caseId: id }, orderBy: { pseudonym: "asc" }, select: { id: true, pseudonym: true } }),

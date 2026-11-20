@@ -134,3 +134,13 @@ def test_preprocess_keeps_curly_quote_signal():
     out = client.post("/v1/preprocess", json={"text": "I’m sure it’s fine", "settings": {"include_tokens": False}}).json()
     assert out["style_markers"]["curly_quote_ratio"] == 1.0
     assert "tokens" not in out
+
+
+def test_engine_token_required_when_configured(monkeypatch):
+    monkeypatch.setenv("ENGINE_TOKEN", "s3cret-token")
+    assert client.get("/health").status_code == 200  # health stays open
+    assert client.get("/v1/info").status_code == 401
+    assert client.get("/v1/info", headers={"Authorization": "Bearer wrong"}).status_code == 401
+    assert client.get("/v1/info", headers={"Authorization": "Bearer s3cret-token"}).status_code == 200
+    monkeypatch.delenv("ENGINE_TOKEN")
+    assert client.get("/v1/info").status_code == 200  # no token configured: open (local use)

@@ -187,7 +187,7 @@ export async function executeRun(runId: string): Promise<void> {
     try {
       res = await fetch(`${process.env.ENGINE_URL ?? "http://127.0.0.1:8000"}/v1/analyze`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...(process.env.ENGINE_TOKEN && { Authorization: `Bearer ${process.env.ENGINE_TOKEN}` }) },
         body: JSON.stringify(body),
         signal: controller.signal,
       });

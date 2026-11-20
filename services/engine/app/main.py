@@ -3,7 +3,11 @@
 Stateless service: receives texts + settings, returns features, scores and
 explanations. All persistence, auth and audit live in the web app / database.
 """
-from fastapi import FastAPI, HTTPException
+import hmac
+import os
+
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 
 from . import ENGINE_VERSION
 from .analysis import METHODS, AnalysisError, analyze
@@ -13,6 +17,19 @@ from .preprocess import normalise, sentences, sha256_text
 from .schemas import AnalyzeRequest, PreprocessRequest
 
 app = FastAPI(title="ZONM NET Analysis Engine", version=ENGINE_VERSION)
+
+
+@app.middleware("http")
+async def require_token(request: Request, call_next):
+    """When ENGINE_TOKEN is set (any engine reachable from outside, e.g. on
+    Vercel), /v1/* requires "Authorization: Bearer <ENGINE_TOKEN>". /health
+    stays open. Without ENGINE_TOKEN (local, private network) nothing changes."""
+    token = os.environ.get("ENGINE_TOKEN", "")
+    if token and request.url.path.startswith("/v1/"):
+        given = request.headers.get("authorization", "")
+        if not hmac.compare_digest(given.encode(), f"Bearer {token}".encode()):
+            return JSONResponse({"detail": "unauthorised"}, status_code=401)
+    return await call_next(request)
 
 
 @app.get("/health")
