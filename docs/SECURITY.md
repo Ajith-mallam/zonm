@@ -63,7 +63,7 @@ To detect tampering by a database superuser, periodically export the chain head 
 
 The policy values are defaults and still need the client's security policy (open item).
 
-**Test-mode switches.** `AUTH_MFA_REQUIRED=false` makes sign-in password-only (every session counts as MFA-verified, the MFA pages redirect into the app, and a warning banner is shown). `AUTH_FORCE_PASSWORD_CHANGE=false` skips the temporary/expired password change. Both default to on and are for local testing only. A deployment checklist must confirm that neither is set to `false`. Login audit events record `mfaRequired`, so periods in test mode are visible in the audit log.
+**Test-mode switches.** `AUTH_MFA_REQUIRED=false` makes sign-in password-only (every session counts as MFA-verified, the MFA pages redirect into the app, and a warning banner is shown). `AUTH_FORCE_PASSWORD_CHANGE=false` skips the temporary/expired password change. Both default to on and are for local testing only. `AUTH_TEST_MODE_BANNER=false` hides the warning banner shown while MFA is off. A deployment checklist must confirm that neither is set to `false`. Login audit events record `mfaRequired`, so periods in test mode are visible in the audit log.
 
 ## Roles (M1)
 

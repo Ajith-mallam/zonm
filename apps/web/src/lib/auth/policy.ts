@@ -17,3 +17,9 @@ export const MFA_REQUIRED = process.env.AUTH_MFA_REQUIRED !== "false";
  * AUTH_FORCE_PASSWORD_CHANGE=false (local testing only).
  */
 export const FORCE_PASSWORD_CHANGE = process.env.AUTH_FORCE_PASSWORD_CHANGE !== "false";
+
+/**
+ * The yellow "test mode" banner shown while MFA is off. Shown unless
+ * AUTH_TEST_MODE_BANNER=false (hidden locally at the user's request).
+ */
+export const SHOW_TEST_MODE_BANNER = !MFA_REQUIRED && process.env.AUTH_TEST_MODE_BANNER !== "false";

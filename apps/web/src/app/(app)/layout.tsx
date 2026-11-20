@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { SignOutButton } from "@/components/sign-out";
-import { MFA_REQUIRED } from "@/lib/auth/policy";
+import { SHOW_TEST_MODE_BANNER } from "@/lib/auth/policy";
 import { requireSession } from "@/lib/auth/session";
 import { can } from "@/lib/rbac";
 
@@ -16,7 +16,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen">
-      {!MFA_REQUIRED && (
+      {SHOW_TEST_MODE_BANNER && (
         <div role="status" className="bg-amber-400 px-4 py-1 text-center text-xs font-medium text-black">
           Test mode: two-step verification is switched off (AUTH_MFA_REQUIRED=false). Turn it back on before real use.
         </div>
