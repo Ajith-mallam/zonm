@@ -45,6 +45,10 @@ To detect tampering by a database superuser, periodically export the chain head 
 - Each imported text records its own SHA-256. Exclusions are flags; redactions and partial exclusions create new versions while version 1 keeps the original text.
 - The key must be backed up separately from the storage directory. Losing it makes the evidence unreadable.
 
+## Client IP addresses in the audit log
+
+The IP recorded with each audit event comes from `X-Forwarded-For` only when `TRUSTED_PROXY_HOPS` is set. Behind one Nginx proxy, set it to 1 and use `proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;`. The app then takes the right-most entry, the address Nginx itself saw. Entries further left are written by the client and are never trusted. With 0 (the default), forwarding headers are ignored and the IP is left blank rather than recorded from a forgeable header.
+
 ## Authentication (M1)
 
 | Control | Implementation | Default |

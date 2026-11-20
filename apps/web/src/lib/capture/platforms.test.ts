@@ -42,6 +42,7 @@ describe("recognising links", () => {
     ["https://www.instagram.com/explore/tags/seychelles/", /not a public post or profile/],
     ["https://x.com/home", /not a public post or profile/],
     ["https://user:pw@x.com/BBCWorld", /password/],
+    ["https://x.com/%E0%A4%A/status/123", /broken %-encoding/],
   ])("refuses %s", (input, msg) => {
     expect(() => parseSocialUrl(input)).toThrow(CaptureInputError);
     expect(() => parseSocialUrl(input)).toThrow(msg);
@@ -89,6 +90,12 @@ describe("picking and errors", () => {
     expect(pickRequestedPost([other, want], t)).toBe(want);
     expect(pickRequestedPost([other], t)).toBe(other); // lone result of a one-post request (pfbid drift, short links)
     expect(pickRequestedPost([other, { id: "2" }], t)).toBeNull();
+    // Scrapers copy the requested URL onto every item as inputUrl; that must not count as a match.
+    const fb = parseSocialUrl("https://www.facebook.com/somepage/posts/pfbid0DBux8z2EN9aPerBQtzfif5dadVo5m9SBQbJUpTsNMLhBRMmbkf889xWbC66SGvUfl");
+    const neighbour = { postId: "111", url: "https://www.facebook.com/somepage/posts/pfbidOTHER", inputUrl: fb.url };
+    const requested = { postId: "222", url: fb.url, inputUrl: fb.url };
+    expect(pickRequestedPost([neighbour, requested], fb)).toBe(requested);
+    expect(pickRequestedPost([neighbour, { postId: "333", inputUrl: fb.url }], fb)).toBeNull();
   });
   it("recognises error items", () => {
     expect(itemError({ error: "not_found", errorDescription: "Private account" })).toBe("not_found");

@@ -268,14 +268,23 @@ export function parseSocialUrl(input: string): CaptureTarget {
   if (u.username || u.password) throw new CaptureInputError("The link must not contain a user name or password.");
   const adapter = HOSTS[u.hostname.toLowerCase()];
   if (!adapter) throw new CaptureInputError(`Only ${SUPPORTED_PLATFORMS} links are supported.`);
-  const t = adapter.parse(u);
+  let t: CaptureTarget | null;
+  try {
+    t = adapter.parse(u);
+  } catch (e) {
+    // decodeURIComponent throws on broken %-escapes in the path.
+    if (e instanceof URIError) throw new CaptureInputError("That is not a valid link (it contains broken %-encoding).");
+    throw e;
+  }
   if (!t) throw new CaptureInputError(`This ${adapter.label} link is not a public post or profile. Copy the link of the post, or of the profile/page itself.`);
   return t;
 }
 
 /** Pick the requested post from a one-post scrape (scrapers may return neighbours). */
 export function pickRequestedPost(items: Item[], t: CaptureTarget): Item | null {
-  const hit = items.find((it) => ["postId", "id", "shortCode", "url", "topLevelUrl", "webVideoUrl", "inputUrl"].some((k) => {
+  // Only the post's own identifiers. Not "inputUrl": scrapers copy the
+  // requested URL onto every item, so it would match neighbouring posts too.
+  const hit = items.find((it) => ["postId", "id", "shortCode", "url", "topLevelUrl", "webVideoUrl"].some((k) => {
     const v = it[k];
     return (typeof v === "string" && v.includes(t.key)) || (typeof v === "number" && String(v) === t.key);
   }));

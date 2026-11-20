@@ -3,7 +3,7 @@
 // reading it needs candidate.identity.read plus a stated purpose and is audited.
 // Writing it needs candidate.identity.write. Identity values never go into the
 // audit log; only the candidate id, the field names and the purpose do.
-import { Platform } from "@prisma/client";
+import { Platform, Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
@@ -87,11 +87,13 @@ export async function deleteCandidateAction(caseId: string, candidateId: string)
   const r = await run(caseId, async () => {
     const a = await requireCasePermission(caseId, "candidate.write");
     const c = await candidateIn(caseId, candidateId);
-    const [docs, monitors] = await Promise.all([
+    const [docs, monitors, captures] = await Promise.all([
       prisma.document.count({ where: { candidateId: c.id } }),
       prisma.socialMonitor.count({ where: { candidateId: c.id } }),
+      prisma.captureJob.count({ where: { candidateId: c.id, status: { in: ["QUEUED", "RUNNING"] } } }),
     ]);
     if (docs || monitors) fail("This candidate has evidence or monitors attached and cannot be deleted.");
+    if (captures) fail("Posts are still being collected for this candidate. Wait for the collection to finish.");
     const ctx = await currentRequestContext();
     await prisma.$transaction(async (tx) => {
       await tx.candidate.delete({ where: { id: c.id } }); // handles and identity cascade
@@ -213,7 +215,8 @@ export async function saveIdentityAction(caseId: string, candidateId: string, _:
     const data = {
       realName: d.realName,
       dateOfBirth: parseDateInput(d.dateOfBirth ?? null),
-      identifiers: d.identifiers ? { text: d.identifiers } : undefined,
+      // An empty field clears stored identifiers (undefined would leave them unchanged).
+      identifiers: d.identifiers ? { text: d.identifiers } : Prisma.DbNull,
       legalBasis: d.legalBasis,
       legalReference: d.legalReference,
       recordedById: a.user.id,
